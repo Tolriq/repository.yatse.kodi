@@ -7,7 +7,7 @@ from utils import logger
 def run(argument):
     if argument['type'] == 'magnet':
         openWith = utils.getSetting('openMagnetWith')
-    	logger.info('Sharing magnet with %s' % openWith)
+        logger.info('Sharing magnet with %s' % openWith)
         if openWith == 'Elementum':
             utils.callPlugin('plugin://plugin.video.elementum/playuri?uri=' + argument['data'] + ')')
         elif openWith == 'Torrenter V2':

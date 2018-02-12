@@ -36,3 +36,14 @@ def getSetting(key):
 def callPlugin(plugin):
     logger.info('Calling plugin: %s' % plugin)
     xbmc.executebuiltin('XBMC.RunPlugin(%s)' % plugin)
+
+def translation(id_value):
+    """ Utility method to get translations
+
+    Args:
+        id_value (int): Code of translation to get
+
+    Returns:
+        str: Translated string
+    """
+    return ADDON.getLocalizedString(id_value)

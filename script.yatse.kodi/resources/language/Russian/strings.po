@@ -1,0 +1,32 @@
+# Kodi Media Center language file
+msgid ""
+msgstr ""
+
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ru\n"
+
+
+msgctxt "#32000"
+msgid "General"
+msgstr "Основные"
+
+msgctxt "#32001"
+msgid "Sharing"
+msgstr "Обмен"
+
+msgctxt "#32002"
+msgid "Enable logging"
+msgstr "Включить лог"
+
+msgctxt "#32003"
+msgid "Open magnet with"
+msgstr "Открывать Magnet с помощью"
+
+msgctxt "#32004"
+msgid "Unsupported command received."
+msgstr "Принята неподдерживаемая команда."
+
+msgctxt "#32005"
+msgid "Please verify if there's an update for this plugin."
+msgstr "Проверьте, есть ли обновление для этого плагина."
