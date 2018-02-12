@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addons>
+<addon id="repository.kodi.yatse.tv" name="Yatse Kodi Add-on repository" version="1.0.0" provider-name="Yatse">
+	<extension point="xbmc.addon.repository" name="Yatse Kodi Add-on repository">
+		<info compressed="false">https://raw.githubusercontent.com/Tolriq/repository.kodi.yatse.tv/master/zips/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/Tolriq/repository.kodi.yatse.tv/master/zips/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/Tolriq/repository.kodi.yatse.tv/master/zips/</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">Yatse repository for Kodi helper addons</summary>
+		<description lang="en">This repository contains scripts and plugins to help Yatse do things that may not be possible to do from JSON api.</description>
+		<genre></genre>
+	</extension>
+</addon>
+
+	<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.0.1" provider-name="Yatse">
+		<requires>
+			<import addon="xbmc.python" version="2.1.0" />
+		</requires>
+		<extension point="xbmc.python.script" library="default.py">
+			<provides>executable</provides>
+		</extension>
+		<extension point="xbmc.addon.metadata">
+			<summary lang="en">Yatse helper script for Kodi</summary>
+			<description lang="en">Yatse helper script for Kodi</description>
+			<platform>all</platform>
+		</extension>
+	</addon>
+</addons>
