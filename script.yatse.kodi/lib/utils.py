@@ -5,6 +5,7 @@ import logging
 
 ADDON = xbmcaddon.Addon()
 ADDON_VERSION = ADDON.getAddonInfo('version')
+ADDON_NAME = ADDON.getAddonInfo('name')
 ADDON_ID = ADDON.getAddonInfo('id')
 
 class XBMCHandler(logging.StreamHandler):

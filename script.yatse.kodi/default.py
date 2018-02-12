@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+import xbmcgui
 
 from lib import utils
 from lib import share
@@ -16,4 +17,8 @@ logger.info("Parameters: %s" % argument)
 
 commands = { 'share' : share.run }
 
-commands[argument['action']](argument)
+if argument['action'] in commands:
+	commands[argument['action']](argument)
+else:
+	logger.error("Command not supported: %s" % argument['action'])
+	xbmcgui.Dialog().ok(utils.ADDON_NAME, "Unsupported command received.", "Please verify if there's an update for this plugin.")
