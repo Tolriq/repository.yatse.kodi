@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import xbmc
 import utils
 
 from utils import logger
@@ -17,6 +16,7 @@ def run(argument):
     elif argument['type'] == 'unresolvedurl':
         import urlresolver
         import urllib
+        import xbmc
         import xbmcgui
         url = urllib.unquote(argument['data'])
         logger.info('Trying to resolve with urlresolver: %s' % url)
@@ -26,6 +26,13 @@ def run(argument):
             dialog.notification(utils.ADDON_NAME, utils.translation(32006), xbmcgui.NOTIFICATION_INFO, 5000)
             logger.error("Url not resolved: %s" % url)
         else:
-            logger.info('Url resolved to: %s' % stream_url)
-            xbmc.Player().play(stream_url)
-            
+            if (not 'queue' in argument) or (argument['queue'] == "false") or (not xbmc.Player().isPlaying()):
+                logger.info('Playing resolved url: %s' % stream_url)
+                xbmc.Player().play(stream_url)
+            else:
+                if xbmc.Player().isPlayingAudio():
+                    logger.info('Queuing to music resolved url: %s' % stream_url)
+                    xbmc.PlayList(xbmc.PLAYLIST_MUSIC).add(stream_url)
+                else:
+                    logger.info('Queuing to video resolved url: %s' % stream_url)
+                    xbmc.PlayList(xbmc.PLAYLIST_VIDEO).add(stream_url)
