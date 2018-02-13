@@ -13,7 +13,7 @@
 	</extension>
 </addon>
 
-	<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.0.3" provider-name="Yatse">
+	<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.0.4" provider-name="Yatse">
 		<requires>
 			<import addon="xbmc.python" version="2.1.0" />
 		</requires>
@@ -22,7 +22,11 @@
 		</extension>
 		<extension point="xbmc.addon.metadata">
 			<summary lang="en">Yatse helper script for Kodi</summary>
+			<summary lang="ru">Скрипт Yatse для Kodi</summary>
+			<summary lang="fr">Script Yatse helper pour Kodi</summary>
 			<description lang="en">Yatse helper script for Kodi</description>
+			<description lang="ru">Скрипт для помощи работы Yatse в Kodi</description>
+			<description lang="fr">Script Yatse helper pour Kodi</description>
 			<platform>all</platform>
 		</extension>
 	</addon>
