@@ -4,7 +4,7 @@ import xbmcgui
 
 from lib import utils
 from lib import share
-from lib.utils import logger
+from lib.utils import logger, translation
 
 logger.info("Starting script version: %s", utils.ADDON_VERSION)
 
@@ -18,7 +18,7 @@ logger.info("Parameters: %s" % argument)
 commands = { 'share' : share.run }
 
 if argument['action'] in commands:
-	commands[argument['action']](argument)
+    commands[argument['action']](argument)
 else:
-	logger.error("Command not supported: %s" % argument['action'])
-	xbmcgui.Dialog().ok(utils.ADDON_NAME, "Unsupported command received.", "Please verify if there's an update for this plugin.")
+    logger.error("Command not supported: %s" % argument['action'])
+    xbmcgui.Dialog().ok(utils.ADDON_NAME, translation(32004), translation(32005))

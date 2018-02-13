@@ -8,7 +8,9 @@
 		</extension>
 		<extension point="xbmc.addon.metadata">
 			<summary lang="en">Yatse helper script for Kodi</summary>
+			<summary lang="ru">Скрипт Yatse для Kodi</summary>
 			<description lang="en">Yatse helper script for Kodi</description>
+			<description lang="ru">Скрипт для помощи работы Yatse в Kodi</description>
 			<platform>all</platform>
 		</extension>
 	</addon>

@@ -1,0 +1,32 @@
+# Kodi Media Center language file
+msgid ""
+msgstr ""
+
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+
+
+msgctxt "#32000"
+msgid "General"
+msgstr ""
+
+msgctxt "#32001"
+msgid "Sharing"
+msgstr ""
+
+msgctxt "#32002"
+msgid "Enable logging"
+msgstr ""
+
+msgctxt "#32003"
+msgid "Open magnet with"
+msgstr ""
+
+msgctxt "#32004"
+msgid "Unsupported command received."
+msgstr ""
+
+msgctxt "#32005"
+msgid "Please verify if there's an update for this plugin."
+msgstr ""
