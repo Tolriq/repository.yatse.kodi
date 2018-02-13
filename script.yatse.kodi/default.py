@@ -13,6 +13,8 @@ for arg in sys.argv[1:]:
     argInfo = arg.split('=')
     argument[argInfo[0]] = argInfo[1]
 
+sys.argv.insert(1,0) # Stupid hack as calling scripts from JSON does not add script handle
+    
 logger.info("Parameters: %s" % argument)
 
 commands = { 'share' : share.run }

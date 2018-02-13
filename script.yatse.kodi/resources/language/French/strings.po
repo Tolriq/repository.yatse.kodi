@@ -30,3 +30,7 @@ msgstr "Commande non supportée reçue."
 msgctxt "#32005"
 msgid "Please verify if there's an update for this plugin."
 msgstr "Merci de vérifier qu'il n'y ait pas une mise à jour de ce plugin."
+
+msgctxt "#32006"
+msgid "Impossible de résoudre cette url."
+msgstr ""

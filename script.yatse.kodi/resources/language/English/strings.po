@@ -30,3 +30,7 @@ msgstr ""
 msgctxt "#32005"
 msgid "Please verify if there's an update for this plugin."
 msgstr ""
+
+msgctxt "#32006"
+msgid "Unable to resolve the shared url."
+msgstr ""

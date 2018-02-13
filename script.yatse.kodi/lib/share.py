@@ -14,3 +14,18 @@ def run(argument):
             utils.callPlugin('plugin://plugin.video.torrenter/?action=playSTRM&url=' + argument['data'] + ')')
         elif openWith == 'Quasar':
             utils.callPlugin('plugin://plugin.video.quasar/playuri?uri=' + argument['data'] + ')')
+    elif argument['type'] == 'unresolvedurl':
+        import urlresolver
+        import urllib
+        import xbmcgui
+        url = urllib.unquote(argument['data'])
+        logger.info('Trying to resolve with urlresolver: %s' % url)
+        stream_url = urlresolver.HostedMediaFile(url = url).resolve()
+        if not stream_url:
+            dialog = xbmcgui.Dialog()
+            dialog.notification(utils.ADDON_NAME, utils.translation(32006), xbmcgui.NOTIFICATION_INFO, 5000)
+            logger.error("Url not resolved: %s" % url)
+        else:
+            logger.info('Url resolved to: %s' % stream_url)
+            xbmc.Player().play(stream_url)
+            

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-	<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.0.4" provider-name="Yatse">
+	<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.0.5" provider-name="Yatse">
 		<requires>
 			<import addon="xbmc.python" version="2.1.0" />
+            <import addon="script.module.urlresolver.yatse" />
 		</requires>
 		<extension point="xbmc.python.script" library="default.py">
 			<provides>executable</provides>
