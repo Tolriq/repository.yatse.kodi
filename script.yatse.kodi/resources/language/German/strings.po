@@ -1,0 +1,36 @@
+# Kodi Media Center language file
+msgid ""
+msgstr ""
+
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+
+
+msgctxt "#32000"
+msgid "General"
+msgstr "Allgemein"
+
+msgctxt "#32001"
+msgid "Sharing"
+msgstr "Teilen"
+
+msgctxt "#32002"
+msgid "Enable logging"
+msgstr "Debug-Logging aktivieren"
+
+msgctxt "#32003"
+msgid "Open magnet with"
+msgstr "Öffnen Magnet-Link mit"
+
+msgctxt "#32004"
+msgid "Unsupported command received."
+msgstr "Nicht unterstützter Befehl."
+
+msgctxt "#32005"
+msgid "Please verify if there's an update for this plugin."
+msgstr "Bitte überprüfen Sie, ob ein Update für dieses Addon vorliegt."
+
+msgctxt "#32006"
+msgid "Unable to resolve the shared url."
+msgstr "Die freigegebene URL konnte nicht aufgelöst werden."
