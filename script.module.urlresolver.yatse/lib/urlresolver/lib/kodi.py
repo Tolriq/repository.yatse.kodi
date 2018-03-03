@@ -30,7 +30,7 @@ import strings
 import CustomProgressDialog
 import urlresolver
 
-addon = xbmcaddon.Addon('script.module.urlresolver')
+addon = xbmcaddon.Addon('script.module.urlresolver.yatse')
 get_setting = addon.getSetting
 show_settings = addon.openSettings
 sleep = xbmc.sleep
