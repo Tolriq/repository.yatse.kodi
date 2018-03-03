@@ -20,7 +20,7 @@ import xbmc
 import xbmcaddon
 from xbmc import LOGDEBUG, LOGERROR, LOGFATAL, LOGINFO, LOGNONE, LOGNOTICE, LOGSEVERE, LOGWARNING  # @UnusedImport
 
-addonsmu = xbmcaddon.Addon('script.module.urlresolver')
+addonsmu = xbmcaddon.Addon('script.module.urlresolver.yatse')
 
 def execute_jsonrpc(command):
     if not isinstance(command, basestring):
