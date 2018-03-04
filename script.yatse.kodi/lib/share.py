@@ -33,17 +33,23 @@ def run(argument):
                 logger.error("Url not resolved and no YoutubeDL: %s" % url)
             else:
                 logger.info('Trying to resolve with YoutubeDL: %s' % url)
-                YoutubeDL_resolver = YoutubeDL({'format': 'best'})
+                YoutubeDL_resolver = YoutubeDL({'format': 'best', 'no_color': 'true'})
                 YoutubeDL_resolver.add_default_info_extractors()
-                result = YoutubeDL_resolver.extract_info(url, download = False)
+                try:
+                    result = YoutubeDL_resolver.extract_info(url, download = False)
+                except Exception as e:
+                    logger.error("Error with YoutubeDL_resolver: %s" % e)
+                    result = []
                 if "url" in result:
                     stream_url = result["url"]
                     logger.info("Url resolved by YoutubeDL: %s" % result)
                 else:
-                    logger.error("Url not resolved: %s" % url)
+                    logger.error("Url not resolved by YoutubeDL: %s" % url)
         else:
-            logger.info("Url resolved by urlResolver: %s" % stream_url)
-
+           logger.info("Url resolved by urlResolver: %s" % stream_url)
+        if not stream_url:
+            logger.info("Trying to play as basic url: %s" % url)
+            stream_url = url
         if stream_url:
             if (not 'queue' in argument) or (argument['queue'] == "false") or (not xbmc.Player().isPlaying()):
                 logger.info('Playing resolved url: %s' % stream_url)
