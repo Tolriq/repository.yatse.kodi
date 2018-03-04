@@ -32,7 +32,7 @@
 	</extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.0.8" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.0.9" provider-name="Yatse">
 	<requires>
 		<import addon="xbmc.python" version="2.1.0" />
 		<import addon="script.module.urlresolver.yatse" />
@@ -51,8 +51,9 @@
 		<description lang="fr">Script Yatse helper pour Kodi</description>
 		<description lang="de">Yatse-Skript für Kodi</description>
 		<platform>all</platform>
-		<news>1.0.8: Add German translation
-        1.0.7: Add support for Youtube-dl module as a secondary url resolver
+		<news>1.0.9: Fix possible issue with YoutubeDL and errors + Always fallback to try to play the url in case it's actually playable.
+			  1.0.8: Add German translation.
+        1.0.7: Add support for Youtube-dl module as a secondary url resolver.
 		</news>
 	</extension>
 </addon>
