@@ -4,6 +4,6 @@
 	   <setting id="logEnabled" type="bool" label="32002" default="false"/>
 	</category>
 	<category label="32001">
-		<setting label="32003" type="select" id="openMagnetWith" values="Elementum|Quasar|Torrenter V2" default="Elementum"/>
+		<setting label="32003" type="select" id="openMagnetWith" values="Elementum|Quasar|Torrenter V2|YATP" default="Elementum"/>
 	</category>
 </settings>

@@ -24,6 +24,8 @@ def run(argument):
             utils.callPlugin('plugin://plugin.video.torrenter/?action=playSTRM&url=' + argument['data'])
         elif openWith == 'Quasar':
             utils.callPlugin('plugin://plugin.video.quasar/playuri?uri=' + argument['data'])
+        elif openWith == 'YATP':
+            utils.callPlugin('plugin://plugin.video.yatp/?action=play&torrent=' + argument['data'] + '&file_index=dialog')
     elif argument['type'] == 'unresolvedurl':
         url = urllib.unquote(argument['data'])
         logger.info('Trying to resolve with urlresolver: %s' % url)
