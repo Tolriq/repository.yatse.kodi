@@ -1,4 +1,4 @@
-# repository.kodi.yatse.tv
+# repository.kodi.yatse
 
 This repository contains scripts and plugins to enhance Kodi experience when used from Yatse.
 

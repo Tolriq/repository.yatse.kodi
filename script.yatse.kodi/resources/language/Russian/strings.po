@@ -30,3 +30,7 @@ msgstr "Принята неподдерживаемая команда."
 msgctxt "#32005"
 msgid "Please verify if there's an update for this plugin."
 msgstr "Проверьте, есть ли обновление для этого плагина."
+
+msgctxt "#32006"
+msgid "Unable to resolve the shared url."
+msgstr "Не удалось определить общий URL"
