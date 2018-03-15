@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
-import xbmcgui
 
-from lib import utils
+import xbmcgui
 from lib import share
+from lib import utils
 from lib.utils import logger, translation
 
 logger.info("Starting script version: %s", utils.ADDON_VERSION)
@@ -13,11 +13,11 @@ for arg in sys.argv[1:]:
     argInfo = arg.split('=')
     argument[argInfo[0]] = argInfo[1]
 
-sys.argv.insert(1,0) # Stupid hack as calling scripts from JSON does not add script handle
-    
+sys.argv.insert(1, 0)  # Stupid hack as calling scripts from JSON does not add script handle
+
 logger.info("Parameters: %s" % argument)
 
-commands = { 'share' : share.run }
+commands = {'share': share.run}
 
 if argument['action'] in commands:
     commands[argument['action']](argument)
