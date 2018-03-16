@@ -15,7 +15,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
-import re
 import urllib
 import urllib2
 import json
@@ -26,8 +25,8 @@ from urlresolver.resolver import UrlResolver, ResolverError
 
 class TheVideoResolver(UrlResolver):
     name = "thevideo"
-    domains = ["thevideo.me", "tvad.me"]
-    pattern = '(?://|\.)((?:thevideo|tvad)\.me)/(?:embed-|download/)?([0-9a-zA-Z]+)'
+    domains = ["thevideo.me", "tvad.me", "thevideo.cc", "thevideo.us"]
+    pattern = '(?://|\.)((?:thevideo\.(?:me|cc|us))|tvad\.me)/(?:embed-|download/)?([0-9a-zA-Z]+)'
 
     def __init__(self):
         self.net = common.Net()
@@ -61,14 +60,12 @@ class TheVideoResolver(UrlResolver):
                 js_result = json.loads(str(e.read()))
             else:
                 raise
-
+            
         common.logger.log('Auth Result: %s' % (js_result))
         if js_result.get('status'):
             return js_result.get('response', {})
         else:
-            if re.match('file\s*\w*\s*not\s*\w*\s*found', str(js_result.get('response', '')), re.IGNORECASE):
-                raise ResolverError('File not found')
             return {}
-
+        
     def get_url(self, host, media_id):
         return self._default_get_url(host, media_id, template='https://tvad.me/embed-{media_id}.html')

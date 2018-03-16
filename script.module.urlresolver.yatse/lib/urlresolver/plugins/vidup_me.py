@@ -46,17 +46,16 @@ class VidUpMeResolver(UrlResolver):
             if len(sources) > 1:
                 try: sources.sort(key=lambda x: int(re.sub("\D", '', x[0])), reverse=True)
                 except: common.logger.log_debug('Scrape sources sort failed |int(re.sub(r"""\D""", '', x[0])|')
-
-            result = self.__auth_ip(media_id)
-            if 'vt' in result:
-                vt = result['vt']
-                del result['vt']
-                return helpers.pick_source(sources) + '?' + urllib.urlencode({'vt': vt}) + helpers.append_headers(self.headers)
-            else:
-                raise ResolverError('Video Token Missing')
-
+            try:
+                vt = self.__auth_ip(media_id)
+                if vt:
+                    params = {'direct': 'false', 'ua': 1, 'vt': vt}
+                    return helpers.pick_source(sources) + '?' + urllib.urlencode(params) + helpers.append_headers(self.headers)
+            except urllib2.HTTPError:
+                source = helpers.pick_source(sources)
+                return source
         else:
-            raise ResolverError('File not found')
+            raise ResolverError('Video Token Missing')
 
     def __auth_ip(self, media_id):
         header = i18n('vidup_auth_header')
@@ -77,13 +76,11 @@ class VidUpMeResolver(UrlResolver):
                 js_result = json.loads(e.read())
             else:
                 raise
-
+            
         common.logger.log('Auth Result: %s' % (js_result))
         if js_result.get('status'):
-            return js_result.get('response', {})
+            return js_result.get('response', {}).get('vt')
         else:
-            if re.match('file\s*\w*\s*not\s*\w*\s*found', str(js_result.get('response', '')), re.IGNORECASE):
-                raise ResolverError('File not found')
             return {}
         
     def get_url(self, host, media_id):

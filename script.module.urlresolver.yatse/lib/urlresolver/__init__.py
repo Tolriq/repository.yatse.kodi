@@ -255,7 +255,7 @@ def _update_settings_xml():
         '\t\t<setting default="true" id="allow_universal" label="%s" type="bool"/>' % (common.i18n('enable_universal')),
         '\t\t<setting default="true" id="auto_pick" label="%s" type="bool"/>' % (common.i18n('auto_pick')),
         '\t\t<setting default="true" id="use_cache" label="%s" type="bool"/>' % (common.i18n('use_function_cache')),
-        '\t\t<setting id="reset_cache" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver/?mode=reset_cache)"/>' % (common.i18n('reset_function_cache')),
+        '\t\t<setting id="reset_cache" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver.yatse/?mode=reset_cache)"/>' % (common.i18n('reset_function_cache')),
         '\t\t<setting id="personal_nid" label="Your NID" type="text" visible="false" default=""/>',
         '\t\t<setting id="last_ua_create" label="last_ua_create" type="number" visible="false" default="0"/>',
         '\t\t<setting id="current_ua" label="current_ua" type="text" visible="false" default=""/>',

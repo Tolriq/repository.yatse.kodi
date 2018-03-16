@@ -18,38 +18,59 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import re, base64
+import re
+import json
+import base64
 from lib import helpers
 from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
+
 
 class FlixtorResolver(UrlResolver):
     name = "flixtor"
     domains = ['flixtor.to']
     pattern = '(?://|\.)(flixtor\.to)/watch/([\w/\-]+)'
-    
+
     def __init__(self):
         self.net = common.Net()
-    
+
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
-        headers = {'User-Agent': common.RAND_UA, 'Referer': 'https://flixtor.to/watch/%s' % media_id}
+        referer = 'https://flixtor.to/watch/%s' % media_id
+        headers = {'User-Agent': common.RAND_UA}
+        response = self.net.http_GET(referer, headers=headers)
+        response_headers = response.get_headers(as_dict=True)
+        headers.update({'Referer': referer})
+        cookie = response_headers.get('Set-Cookie', None)
+        if cookie:
+            headers.update({'Cookie': cookie.replace('HttpOnly, ', '')})
         html = self.net.http_GET(web_url, headers=headers).content
-        
+
         if html:
-            try: html = base64.b64decode(html.encode("rot13"))
-            except Exception as e: raise ResolverError(e)
-            sources = helpers.scrape_sources(html)
-            
-            if sources: return helpers.pick_source(sources) + helpers.append_headers(headers)
-            
+            try:
+                html = base64.b64decode(html.decode("rot13"))
+                l_ = []
+                for c_ in html:
+                    k_ = ord(c_)
+                    t_ = chr(33 + (k_ + 14) % 94) if 33 <= k_ <= 126 else chr(k_)
+                    l_.append(t_)
+                html = ''.join(l_)
+                html = json.loads(html)
+            except Exception as e:
+                raise ResolverError(e)
+
+            source = html.get("file", None)
+            if source:
+                return source + helpers.append_headers(headers)
+
         raise ResolverError("Unable to locate video")
-    
+
     def get_url(self, host, media_id):
-        if media_id.lower().startswith("tv/"): url = 'https://flixtor.to/ajax/getvid/e'
-        else: url = 'https://flixtor.to/ajax/getvid/m'
+        if media_id.lower().startswith("tv/"):
+            url = 'https://flixtor.to/ajax/gvid/e'
+        else:
+            url = 'https://flixtor.to/ajax/gvid/m'
         media_id = re.sub('/{2,}', '/', re.sub('[^\d/]', '', media_id))
         media_id = media_id[:-1] if media_id.endswith('/') else media_id
-        
-        return self._default_get_url(host, media_id, template = url + media_id)
-        
+
+        return self._default_get_url(host, media_id, template=url + media_id)

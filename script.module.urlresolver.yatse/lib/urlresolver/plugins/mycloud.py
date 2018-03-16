@@ -15,13 +15,34 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import string
+from random import choice
+from lib import helpers
+from urlresolver import common
+from urlresolver.resolver import UrlResolver, ResolverError
 
-from __generic_resolver__ import GenericResolver
 
-class MycloudResolver(GenericResolver):
+class MycloudResolver(UrlResolver):
     name = "mycloud"
     domains = ["mycloud.to", "mcloud.to"]
     pattern = '(?://|\.)(my?cloud\.to)/embed/([\S]+)'
 
+    def __init__(self):
+        self.net = common.Net()
+
+    def get_media_url(self, host, media_id):
+        web_url = self.get_url(host, media_id)
+        headers = {'User-Agent': common.RAND_UA, 'Referer': 'https://www1.putlockertv.se/'}
+        html = self.net.http_GET(web_url, headers=headers).content
+
+        if html:
+            sources = helpers.scrape_sources(html)
+            if sources:
+                headers.update({'Referer': web_url})
+                return helpers.pick_source(sources) + helpers.append_headers(headers)
+
+        raise ResolverError("Unable to locate video")
+
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='http://{host}/embed/{media_id}')
+        return self._default_get_url(host, media_id, template='https://mcloud.to/embed/{media_id}?ui=%s' % ''.join(
+            choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(24)))

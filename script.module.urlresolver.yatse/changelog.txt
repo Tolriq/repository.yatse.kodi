@@ -1,16 +1,65 @@
-[B]Version 4.0.17 (Jan 13, 2018)[/B]
+[B]Version 5.0.08a (Mar 14, 2018)[/B]
 - Code Base Changes:
     - None
 - Resolvers Added:
-    - Getvi.tv (azzy9)
+    - None
 - Resolvers Fixed/Updated:
-    - TheVid (azzy9)
-    - Rapidvideo (azzy9)
-    - Vidzella (azzy9)
-    - AllDebrid (jsergio123)
-    - Tune.pk (Gujal00)
-    - Speedplay (Gujal00)
+    - realdebrid
+- Resolvers Removed
+    - None
 - Languages Added/Updated
-    - Italian (MrTruth0)
-- Testers Needed: https://www.tvaddons.co/urlresolver-testing-kodi/
-- Developers Needed: https://www.tvaddons.co/urlresolver-kodi-addon/
+	- None
+
+[B]Version 5.0.08 (Mar 10, 2018)[/B]
+- Code Base Changes:
+    - Fix for testing streams with SSL errors
+    - Fixes for iOS
+    - Include jsunfuck
+    - Fix for SSL Context
+    - Fixes for Python > 2.7.12
+    - Fixes for Xbox One
+    - Support for GDrive (see dmdsoftware.net)
+- Resolvers Added:
+    - ssfiles
+    - vidnode
+    - filebebo
+    - yandex
+    - streamgo
+- Resolvers Fixed/Updated:
+    - streamango
+    - flixtor
+    - vshare
+    - mycloud
+    - premiumize
+    - openload
+    - flashx
+    - tunepk
+    - streamplay
+    - speedvid
+    - thevid
+    - thevideo
+    - userscloud
+    - vidlox
+    - rapidvideocom
+    - alldebrid
+    - uptobox
+    - vidzella
+    - googlevideo
+    - powvideo
+    - vidtodo
+    - xvidstage
+- Resolvers Removed
+    - ol_gmu
+    - divxstage
+    - cloudtime
+    - nosvideo
+    - stagevu
+- Languages Added/Updated
+    - Greek
+    - Italian
+    - Norwegian translation
+    - Croatian strings
+    - Spanish summary
+
+* Testers Needed: https://www.tvaddons.co/urlresolver-testing-kodi/
+* Developers Needed: https://www.tvaddons.co/urlresolver-kodi-addon/

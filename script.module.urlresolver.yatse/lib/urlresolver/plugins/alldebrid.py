@@ -19,7 +19,6 @@ import os
 import re
 import urllib2
 import json
-from lib import helpers
 from urlresolver import common
 from urlresolver.common import i18n
 from urlresolver.resolver import UrlResolver, ResolverError
@@ -70,7 +69,7 @@ class AllDebridResolver(UrlResolver):
             js_result = json.loads(result)
             logger.log_debug('AllDebrid resolve: [%s]' % js_result)
             if 'error' in js_result:
-                common.kodi.notify(msg=js_result['error'], duration=5000)
+                common.kodi.notify(msg=str(js_result['error']), duration=5000)
                 raise ResolverError('AllDebrid Error: %s (%s)' % (js_result['error'], js_result['errorCode']))
             elif js_result['success']:
                 if js_result['infos']['link']:
@@ -121,7 +120,6 @@ class AllDebridResolver(UrlResolver):
 
     def authorize_resolver(self):
         try:
-            logger.log_debug('Debug build 2')
             self.reset_authorization()
             username = self.get_setting('username')
             password = self.get_setting('password')
@@ -161,8 +159,8 @@ class AllDebridResolver(UrlResolver):
         xml.append('<setting id="%s_login" type="bool" label="%s" default="false"/>' % (cls.__name__, i18n('login')))
         xml.append('<setting id="%s_username" enable="eq(-1,true)" type="text" label="%s" default=""/>' % (cls.__name__, i18n('username')))
         xml.append('<setting id="%s_password" enable="eq(-2,true)" type="text" label="%s" option="hidden" default=""/>' % (cls.__name__, i18n('password')))
-        xml.append('<setting id="%s_auth" type="action" label="%s" enable="!eq(-1,)+!eq(-2,)+!eq(-3,false)" action="RunPlugin(plugin://script.module.urlresolver/?mode=auth_ad)"/>' % (cls.__name__, i18n('auth_my_account')))
-        xml.append('<setting id="%s_reset" type="action" label="%s" enable="!eq(-2,)+!eq(-3,)+!eq(-4,false)" action="RunPlugin(plugin://script.module.urlresolver/?mode=reset_ad)"/>' % (cls.__name__, i18n('reset_my_auth')))
+        xml.append('<setting id="%s_auth" type="action" label="%s" enable="!eq(-1,)+!eq(-2,)+!eq(-3,false)" action="RunPlugin(plugin://script.module.urlresolver.yatse/?mode=auth_ad)"/>' % (cls.__name__, i18n('auth_my_account')))
+        xml.append('<setting id="%s_reset" type="action" label="%s" enable="!eq(-2,)+!eq(-3,)+!eq(-4,false)" action="RunPlugin(plugin://script.module.urlresolver.yatse/?mode=reset_ad)"/>' % (cls.__name__, i18n('reset_my_auth')))
         xml.append('<setting id="%s_token" visible="false" type="text" default=""/>' % (cls.__name__))
         return xml
 

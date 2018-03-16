@@ -20,6 +20,7 @@ from urlresolver import common, hmf
 from urlresolver.resolver import UrlResolver, ResolverError
 from lib import helpers
 import re
+import xbmc
 import json
 import urllib2
 
@@ -27,11 +28,13 @@ import urllib2
 class GoogleResolver(UrlResolver):
     name = "googlevideo"
     domains = ["googlevideo.com", "googleusercontent.com", "get.google.com",
-               "plus.google.com", "googledrive.com", "drive.google.com", "docs.google.com", "youtube.googleapis.com"]
-    pattern = 'https?://(.*?(?:\.googlevideo|(?:plus|drive|get|docs)\.google|google(?:usercontent|drive|apis))\.com)/(.*?(?:videoplayback\?|[\?&]authkey|host/)*.+)'
+               "plus.google.com", "googledrive.com", "drive.google.com", "docs.google.com", "youtube.googleapis.com", "bp.blogspot.com"]
+    pattern = 'https?://(.*?(?:\.googlevideo|\.bp\.blogspot|(?:plus|drive|get|docs)\.google|google(?:usercontent|drive|apis))\.com)/(.*?(?:videoplayback\?|[\?&]authkey|host/)*.+)'
 
     def __init__(self):
         self.net = common.Net()
+        self.headers = {'User-Agent': common.FF_USER_AGENT}
+        self.url_matches = ['redirector.', 'googleusercontent', '.bp.blogspot.com']
         self.itag_map = {'5': '240', '6': '270', '17': '144', '18': '360', '22': '720', '34': '360', '35': '480',
                          '36': '240', '37': '1080', '38': '3072', '43': '360', '44': '480', '45': '720', '46': '1080',
                          '82': '360 [3D]', '83': '480 [3D]', '84': '720 [3D]', '85': '1080p [3D]', '100': '360 [3D]',
@@ -48,63 +51,64 @@ class GoogleResolver(UrlResolver):
         except: return 0
         
     def get_media_url(self, host, media_id):
+        video = None
         web_url = self.get_url(host, media_id)
-        response, video_urls = self._parse_google(web_url)
-        if video_urls:
-            video_urls.sort(key=self.__key, reverse=True)
-            video = helpers.pick_source(video_urls)
-        else:
-            video = None
-
-        headers = {'User-Agent': common.FF_USER_AGENT}
-        if response is not None:
-            res_headers = response.get_headers(as_dict=True)
-            if 'Set-Cookie' in res_headers:
-                headers['Cookie'] = res_headers['Set-Cookie']
+        if xbmc.getCondVisibility('System.HasAddon(plugin.video.gdrive)') and self.get_setting('use_gdrive'):
+            doc_id = re.search('[-\w]{25,}', web_url)
+            if doc_id:
+                common.kodi.notify(header=None, msg='Resolving with GDRIVE', duration=3000)
+                video = 'plugin://plugin.video.gdrive/?mode=video&amp;instance=gdrive1&amp;filename=%s&amp;content_type=video' % doc_id.group(1)
 
         if not video:
-            if ('redirector.' in web_url) or ('googleusercontent' in web_url):
-                class NoRedirection(urllib2.HTTPErrorProcessor):
-                    def http_response(self, request, response):
-                        return response
-                    https_response = http_response
-                opener = urllib2.build_opener(NoRedirection)
-                opener = urllib2.install_opener(opener)
-                request = urllib2.Request(web_url, headers=headers)
-                response = urllib2.urlopen(request)
-                response_headers = dict([(item[0].title(), item[1]) for item in response.info().items()])
-                cookie = response_headers.get('Set-Cookie', None)
-                if cookie:
-                    headers.update({'Cookie': cookie})
-                video = response.geturl()
+            response, video_urls = self._parse_google(web_url)
+            if video_urls:
+                video_urls.sort(key=self.__key, reverse=True)
+                video = helpers.pick_source(video_urls)
+
+            if response is not None:
+                res_headers = response.get_headers(as_dict=True)
+                if 'Set-Cookie' in res_headers:
+                    self.headers['Cookie'] = res_headers['Set-Cookie']
+
+        if not video:
+            if any(url_match in web_url for url_match in self.url_matches):
+                video = self._parse_redirect(web_url, hdrs=self.headers)
             elif 'googlevideo.' in web_url:
-                video = web_url + helpers.append_headers(headers)
-        else:
-            if ('redirector.' in video) or ('googleusercontent' in video):
-                class NoRedirection(urllib2.HTTPErrorProcessor):
-                    def http_response(self, request, response):
-                        return response
-                    https_response = http_response
-                opener = urllib2.build_opener(NoRedirection)
-                opener = urllib2.install_opener(opener)
-                request = urllib2.Request(video, headers=headers)
-                response = urllib2.urlopen(request)
-                response_headers = dict([(item[0].title(), item[1]) for item in response.info().items()])
-                cookie = response_headers.get('Set-Cookie', None)
-                if cookie:
-                    headers.update({'Cookie': cookie})
-                video = response.geturl()
+                video = web_url + helpers.append_headers(self.headers)
+        elif 'plugin://' not in video:
+            if any(url_match in video for url_match in self.url_matches):
+                video = self._parse_redirect(video, hdrs=self.headers)
 
         if video:
             if 'plugin://' in video:  # google plus embedded videos may result in this
                 return video
             else:
-                return video + helpers.append_headers(headers)
+                return video + helpers.append_headers(self.headers)
 
         raise ResolverError('File not found')
 
     def get_url(self, host, media_id):
         return 'https://%s/%s' % (host, media_id)
+    
+    def _parse_redirect(self, url, hdrs={}):
+        class NoRedirection(urllib2.HTTPErrorProcessor):
+            def http_response(self, request, response):
+                return response
+
+        opener = urllib2.build_opener(NoRedirection)
+        opener = urllib2.install_opener(opener)
+        request = urllib2.Request(url, headers=hdrs)
+        try: response = urllib2.urlopen(request)
+        except urllib2.HTTPError as e:
+            if e.code == 429 or e.code == 403:
+                msg = 'Daily view limit reached'
+                common.kodi.notify(header=None, msg=msg, duration=3000)
+                raise ResolverError(msg)
+        response_headers = dict([(item[0].title(), item[1]) for item in response.info().items()])
+        cookie = response_headers.get('Set-Cookie', None)
+        if cookie:
+            self.headers.update({'Cookie': cookie})
+        return response.geturl()
 
     def _parse_google(self, link):
         sources = []
@@ -123,8 +127,8 @@ class GoogleResolver(UrlResolver):
             sources = self._parse_gdocs(response.content)
         elif 'youtube.googleapis.com' in link:
             cid = re.search('cid=([\w]+)', link)
-            try: link = 'https://drive.google.com/file/d/%s/edit' % cid.groups(1)
-            except: raise ResolverError('ID not found')
+            if cid: link = 'https://drive.google.com/file/d/%s/edit' % cid.groups(1)
+            else: raise ResolverError('ID not found')
             response = self.net.http_GET(link)
             sources = self._parse_gdocs(response.content)
         return response, sources
@@ -221,3 +225,9 @@ class GoogleResolver(UrlResolver):
                 return {}
         else:
             return {}
+
+    @classmethod
+    def get_settings_xml(cls):
+        xml = super(cls, cls).get_settings_xml()
+        xml.append('<setting id="%s_use_gdrive" type="bool" label="Use external GDrive addon if installed" default="false"/>' % (cls.__name__))
+        return xml

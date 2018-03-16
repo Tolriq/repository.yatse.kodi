@@ -15,7 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
 import re
 import urllib2
 import json
@@ -30,6 +29,7 @@ logger.disable()
 CLIENT_ID = 'MUQMIQX6YWDSU'
 USER_AGENT = 'URLResolver for Kodi/%s' % (common.addon_version)
 INTERVALS = 5
+
 
 class RealDebridResolver(UrlResolver):
     name = "Real-Debrid"
@@ -204,8 +204,8 @@ class RealDebridResolver(UrlResolver):
     def get_settings_xml(cls):
         xml = super(cls, cls).get_settings_xml()
         xml.append('<setting id="%s_autopick" type="bool" label="%s" default="false"/>' % (cls.__name__, i18n('auto_primary_link')))
-        xml.append('<setting id="%s_auth" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver/?mode=auth_rd)"/>' % (cls.__name__, i18n('auth_my_account')))
-        xml.append('<setting id="%s_reset" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver/?mode=reset_rd)"/>' % (cls.__name__, i18n('reset_my_auth')))
+        xml.append('<setting id="%s_auth" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver.yatse/?mode=auth_rd)"/>' % (cls.__name__, i18n('auth_my_account')))
+        xml.append('<setting id="%s_reset" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver.yatse/?mode=reset_rd)"/>' % (cls.__name__, i18n('reset_my_auth')))
         xml.append('<setting id="%s_token" visible="false" type="text" default=""/>' % (cls.__name__))
         xml.append('<setting id="%s_refresh" visible="false" type="text" default=""/>' % (cls.__name__))
         xml.append('<setting id="%s_client_id" visible="false" type="text" default=""/>' % (cls.__name__))

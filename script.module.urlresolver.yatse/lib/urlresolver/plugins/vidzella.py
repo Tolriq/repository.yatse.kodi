@@ -18,34 +18,32 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import urlparse
+import re
 from lib import helpers
 from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
 
+
 class VidZellaResolver(UrlResolver):
     name = "vidzella"
     domains = ['vidzella.me', 'dl.vidzella.me']
-    pattern = '(?://|\.)(vidzella.me)/(?:play/?#|e/|stream\.php\?stream=)([0-9a-zA-Z]+)'
+    pattern = '(?://|\.)(vidzella.me)/(?:e/|play/?#|stream\.php\?stream=)([0-9a-zA-Z]+)'
+
+    def __init__(self):
+        self.net = common.Net()
     
     def get_media_url(self, host, media_id):
-        url = helpers.get_media_url(self.get_url(host, media_id), result_blacklist=['intro_black']).replace(' ', '%20')
-        net = common.Net()
-        headers = {}
+        web_url = self.get_url(host, media_id)
+        headers = {'User-Agent': common.RAND_UA}
+        html = self.net.http_GET(web_url, headers=headers).content
 
-        if '|' in url:
-            qs_header_split = url.split('|')
-            url = qs_header_split[0]
+        if html:
+            source = re.search("""<source\s+src\s*=\s*["']([^"']+)""", html)
+            if source:
+                headers.update({'Referer': web_url})
+                return self.net.http_GET(source.group(1), headers=headers).get_url() + helpers.append_headers(headers)
 
-            headers = urlparse.parse_qs(qs_header_split[1])
-            headers = dict((k, v[0]) for k, v in headers.iteritems())
-
-        response = net.http_HEAD(url, headers=headers)
-        if(response.get_url()):
-            return response.get_url() + helpers.append_headers(headers)
-        else:
-            raise ResolverError(common.i18n('no_video_link'))
+        raise ResolverError('File Not Found')
     
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='https://vidzella.me/e/{media_id}')
-        
+        return self._default_get_url(host, media_id, template='https://{host}/e/{media_id}')

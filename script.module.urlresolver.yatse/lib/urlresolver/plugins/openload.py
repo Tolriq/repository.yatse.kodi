@@ -18,7 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 import os
 import json
-import ol_gmu
+from lib import helpers
 from urlresolver import common
 from urlresolver.common import i18n
 from urlresolver.resolver import UrlResolver, ResolverError
@@ -30,7 +30,6 @@ API_BASE_URL = 'https://api.openload.co/1'
 INFO_URL = API_BASE_URL + '/streaming/info'
 GET_URL = API_BASE_URL + '/streaming/get?file={media_id}'
 FILE_URL = API_BASE_URL + '/file/info?file={media_id}'
-OL_PATH = os.path.join(common.plugins_path, 'ol_gmu.py')
 
 class OpenLoadResolver(UrlResolver):
     name = "openload"
@@ -42,25 +41,21 @@ class OpenLoadResolver(UrlResolver):
 
     def get_media_url(self, host, media_id):
         try:
-            self._auto_update(self.get_setting('url'), OL_PATH, self.get_setting('key'))
-            reload(ol_gmu)
-            return ol_gmu.get_media_url(self.get_url(host, media_id))  # @UndefinedVariable
-        except Exception as e:
-            logger.log_debug('Exception during openload resolve parse: %s' % (e))
-            try:
-                if not self.__file_exists(media_id):
-                    raise ResolverError('File Not Available')
-                
-                video_url = self.__check_auth(media_id)
-                if not video_url:
-                    video_url = self.__auth_ip(media_id)
-            except ResolverError:
-                raise
-            
-            if video_url:
-                return video_url
-            else:
-                raise ResolverError(i18n('no_ol_auth'))
+            if not self.__file_exists(media_id):
+                raise ResolverError('File Not Available')
+
+            video_url = self.__check_auth(media_id)
+            if not video_url:
+                video_url = self.__auth_ip(media_id)
+        except ResolverError:
+            raise
+
+        if video_url:
+            headers = {'User-Agent': common.RAND_UA}
+            video_url = video_url + helpers.append_headers(headers)
+            return video_url
+        else:
+            raise ResolverError(i18n('no_ol_auth'))
 
     def get_url(self, host, media_id):
         return 'http://openload.co/embed/%s' % (media_id)
@@ -68,7 +63,7 @@ class OpenLoadResolver(UrlResolver):
     def __file_exists(self, media_id):
         js_data = self.__get_json(FILE_URL.format(media_id=media_id))
         return js_data.get('result', {}).get(media_id, {}).get('status') == 200
-        
+
     def __auth_ip(self, media_id):
         js_data = self.__get_json(INFO_URL)
         pair_url = js_data.get('result', {}).get('auth_url', '')
@@ -80,7 +75,7 @@ class OpenLoadResolver(UrlResolver):
             line3 = i18n('click_pair').decode('utf-8') % (pair_url)
             with common.kodi.CountdownDialog(header, line1, line2, line3) as cd:
                 return cd.start(self.__check_auth, [media_id])
-        
+
     def __check_auth(self, media_id):
         try:
             js_data = self.__get_json(GET_URL.format(media_id=media_id))
@@ -92,7 +87,7 @@ class OpenLoadResolver(UrlResolver):
                 raise ResolverError(msg)
         
         return js_data.get('result', {}).get('url')
-    
+
     def __get_json(self, url):
         result = self.net.http_GET(url).content
         common.logger.log(result)

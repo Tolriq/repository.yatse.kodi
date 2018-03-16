@@ -55,11 +55,19 @@ class UpToBoxResolver(UrlResolver):
         if isinstance(html, unicode): html = html.encode('utf-8', 'ignore')
         
         if 'not available in your country' in html:
-            raise ResolverError('Unavailable in your country')
+            msg = 'Unavailable in your country'
+            common.kodi.notify(header=None, msg=msg, duration=3000)
+            raise ResolverError(msg)
+        elif re.search('''You need to be a <a.+?>premium member''', html):
+            msg = 'Premium membership required'
+            common.kodi.notify(header=None, msg=msg, duration=3000)
+            raise ResolverError(msg)
         
         r = re.search('or you can wait ((?:\d hour,\s*)?(?:\d+ minutes?,\s*)?\d+ seconds?)', html, re.I)
         if r:
-            raise ResolverError('Cooldown in effect | %s remaining' % r.group(1))
+            msg = 'Cooldown in effect, %s remaining' % r.group(1)
+            common.kodi.notify(header=None, msg=msg, duration=3000)
+            raise ResolverError(msg)
         
         data = helpers.get_hidden(html)
         for _ in range(0, 3):

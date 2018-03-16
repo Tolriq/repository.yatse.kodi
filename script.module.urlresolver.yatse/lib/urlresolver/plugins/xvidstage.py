@@ -36,6 +36,10 @@ class XvidstageResolver(UrlResolver):
         html = response.content
         data = helpers.get_hidden(html)
         headers['Cookie'] = response.get_headers(as_dict=True).get('Set-Cookie', '')
+        sleep_time = 10  # in seconds
+        wait_ms = sleep_time * 1000
+        common.kodi.notify(header=None, msg='XvidStage requires %s second wait' % sleep_time, duration=wait_ms)
+        common.kodi.sleep(wait_ms)
         html = self.net.http_POST(web_url, headers=headers, form_data=data).content
 
         if html:

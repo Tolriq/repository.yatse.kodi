@@ -25,7 +25,7 @@ MAX_TRIES = 3
 
 class ClickNUploadResolver(UrlResolver):
     name = "clicknupload"
-    domains = ['clicknupload.com', 'clicknupload.me', 'clicknupload.link','clicknupload.org']
+    domains = ['clicknupload.com', 'clicknupload.me', 'clicknupload.link', 'clicknupload.org']
     pattern = '(?://|\.)(clicknupload\.(?:com|me|link|org))/(?:f/)?([0-9A-Za-z]+)'
 
     def __init__(self):
@@ -55,4 +55,4 @@ class ClickNUploadResolver(UrlResolver):
         raise ResolverError('Unable to locate link')
 
     def get_url(self, host, media_id):
-        return 'https://clicknupload.link/%s' % media_id
+        return 'https://clicknupload.org/%s' % media_id
