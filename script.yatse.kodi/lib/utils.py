@@ -3,6 +3,7 @@ import logging
 
 import xbmc
 import xbmcaddon
+import xbmcgui
 
 ADDON = xbmcaddon.Addon()
 ADDON_VERSION = ADDON.getAddonInfo('version')
@@ -53,3 +54,20 @@ def translation(id_value):
         str: Translated string
     """
     return ADDON.getLocalizedString(id_value)
+
+
+def play_url(url, action):
+    if url:
+        if (action == "play") or (not xbmc.Player().isPlaying()):
+            logger.info('Playing url: %s' % url)
+            xbmc.Player().play(url)
+        else:
+            if xbmc.Player().isPlayingAudio():
+                logger.info('Queuing to music url: %s' % url)
+                xbmc.PlayList(xbmc.PLAYLIST_MUSIC).add(url)
+            else:
+                logger.info('Queuing to video url: %s' % url)
+                xbmc.PlayList(xbmc.PLAYLIST_VIDEO).add(url)
+    else:
+        dialog = xbmcgui.Dialog()
+        dialog.notification(ADDON_NAME, translation(32006), xbmcgui.NOTIFICATION_INFO, 5000)
