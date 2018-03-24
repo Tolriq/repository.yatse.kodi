@@ -9,7 +9,7 @@ ADDON = xbmcaddon.Addon()
 ADDON_VERSION = ADDON.getAddonInfo('version')
 ADDON_NAME = ADDON.getAddonInfo('name')
 ADDON_ID = ADDON.getAddonInfo('id')
-
+KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split()[0][:2])
 
 class XBMCHandler(logging.StreamHandler):
     xbmc_levels = {

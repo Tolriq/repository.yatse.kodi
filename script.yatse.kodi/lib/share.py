@@ -4,7 +4,7 @@ import urllib
 import urlresolver
 import utils
 import xbmcgui
-from utils import logger
+from utils import logger, KODI_VERSION
 
 have_youtube_dl = False
 try:
@@ -43,8 +43,12 @@ def handle_magnet(data):
 def handle_unresolved_url(data, action):
     url = urllib.unquote(data)
     if not utils.kodi_is_playing():
-        dialog = xbmcgui.DialogBusy()
-        dialog.create()
+        if KODI_VERSION <= 16:
+            dialog = xbmcgui.DialogProgress()
+            dialog.create("YATSE", "%s %s" % (action, url))
+        else:
+            dialog = xbmcgui.DialogBusy()
+            dialog.create()
         dialog.update(-1)
     else:
         dialog = None
