@@ -35,7 +35,7 @@
 	</extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.2.1" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.2.2" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
@@ -54,7 +54,8 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.2.1: YoutubeDL is no more optional and used first to gather metadata and provide better integration with Yatse 8.2.5
+        <news>1.2.2: Fix issue with busy dialog on Kodi 16 or less
+1.2.1: YoutubeDL is no more optional and used first to gather metadata and provide better integration with Yatse 8.2.5
 1.1.0: Fix some magnet not working + add support for YATP torrent plugin.
 1.0.9: Fix possible issue with YoutubeDL and errors + Always fallback to try to play the url in case it's actually playable.
 1.0.8: Add German translation.
