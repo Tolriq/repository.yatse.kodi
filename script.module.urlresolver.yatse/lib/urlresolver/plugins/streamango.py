@@ -21,8 +21,8 @@ from urlresolver.resolver import UrlResolver, ResolverError
 
 class StreamangoResolver(UrlResolver):
     name = "streamango"
-    domains = ['streamango.com', "streamcherry.com"]
-    pattern = '(?://|\.)(stream(?:ango|cherry)\.com)/(?:v/d|f|embed)/([0-9a-zA-Z]+)'
+    domains = ['streamango.com', "streamcherry.com", "fruitstreams.com"]
+    pattern = '(?://|\.)((?:stream(?:ango|cherry)|fruitstreams)\.com)/(?:v/d|f|embed)/([0-9a-zA-Z]+)'
     
     def __init__(self):
         self.net = common.Net()
@@ -78,7 +78,6 @@ class StreamangoResolver(UrlResolver):
                     _0x59b81a = str(_0x59b81a) + chr(_0x5a46ef)
 
         return _0x59b81a
-
 
     def get_url(self, host, media_id):
         if host.lower() == 'streamango.com':

@@ -158,7 +158,7 @@ class RealDebridResolver(UrlResolver):
             hosters = []
             url = 'https://api.real-debrid.com/rest/1.0/hosts/regex'
             js_result = json.loads(self.net.http_GET(url, headers=self.headers).content)
-            regexes = [regex.lstrip('/').rstrip('/').replace('\/', '/') for regex in js_result]
+            regexes = [regex[1:-1].replace('\/', '/').rstrip('\\') for regex in js_result]
             logger.log_debug('RealDebrid hosters : %s' % (regexes))
             hosters = [re.compile(regex) for regex in regexes]
         except Exception as e:

@@ -25,8 +25,8 @@ from urlresolver.resolver import UrlResolver, ResolverError
 
 class TheVideoResolver(UrlResolver):
     name = "thevideo"
-    domains = ["thevideo.me", "tvad.me", "thevideo.cc", "thevideo.us"]
-    pattern = '(?://|\.)((?:thevideo\.(?:me|cc|us))|tvad\.me)/(?:embed-|download/)?([0-9a-zA-Z]+)'
+    domains = ["thevideo.me", "tvad.me", "thevideo.cc", "thevideo.us", "thevideo.io", "thevideo.website"]
+    pattern = '(?://|\.)((?:thevideo\.(?:me|cc|us|io|website))|tvad\.me)/(?:embed-|download/)?([0-9a-zA-Z]+)'
 
     def __init__(self):
         self.net = common.Net()
@@ -51,7 +51,7 @@ class TheVideoResolver(UrlResolver):
         
     def __check_auth(self, media_id):
         common.logger.log('Checking Auth: %s' % (media_id))
-        url = 'https://thevideo.me/pair?file_code=%s&check' % (media_id)
+        url = 'https://tvad.me/pair?file_code=%s&check' % (media_id)
         try: js_result = json.loads(self.net.http_GET(url, headers=self.headers).content)
         except ValueError:
             raise ResolverError('Unusable Authorization Response')
