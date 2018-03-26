@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import re
 
 import xbmc
 import xbmcaddon
@@ -10,6 +11,7 @@ ADDON_VERSION = ADDON.getAddonInfo('version')
 ADDON_NAME = ADDON.getAddonInfo('name')
 ADDON_ID = ADDON.getAddonInfo('id')
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split()[0][:2])
+
 
 class XBMCHandler(logging.StreamHandler):
     xbmc_levels = {
@@ -138,6 +140,8 @@ def get_kodi_list_item(meta_data):
         item_info['genre'] = meta_data['categories']
     if 'average_rating' in meta_data:
         item_info['rating'] = meta_data['average_rating']
+    if 'description' in meta_data:
+        item_info['plot'] = re.sub('<[^<]+?>', '', meta_data['description'])
 
     if len(item_info) > 0:
         list_item.setInfo('music', item_info)
