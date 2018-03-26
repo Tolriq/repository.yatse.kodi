@@ -11,6 +11,14 @@ try:
     # noinspection PyUnresolvedReferences
     import youtube_dl
 
+    try:
+        import private.ydlfix
+
+        private.ydlfix.patch_youtube_dl()
+        logger.info('YoutubeDL patched!')
+    except Exception as ex:
+        logger.error('YoutubeDL not patched: %s' % ex)
+
     have_youtube_dl = True
 except ImportError:
     logger.info('YoutubeDL not present')
