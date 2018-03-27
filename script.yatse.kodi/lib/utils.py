@@ -127,6 +127,7 @@ def play_items(items, action):
 def get_kodi_list_item(meta_data):
     list_item = xbmcgui.ListItem()
     item_info = {}
+    is_audio = False
     if 'title' in meta_data:
         list_item.setLabel(meta_data['title'])
         item_info['title'] = meta_data['title']
@@ -142,9 +143,31 @@ def get_kodi_list_item(meta_data):
         item_info['rating'] = meta_data['average_rating']
     if 'description' in meta_data:
         item_info['plot'] = re.sub('<[^<]+?>', '', meta_data['description'])
+    if 'ext' in meta_data:
+        is_audio = is_audio_extension(meta_data['ext'])
 
     if len(item_info) > 0:
-        list_item.setInfo('music', item_info)
-        list_item.setInfo('video', item_info)
+        audio_hack = require_audio_hack(list_item.getPath())
+        logger.info('Is audio: %s | Require hack: %s' % (is_audio, audio_hack))
+        if is_audio or audio_hack:
+            if 'plot' in item_info:
+                del item_info['plot']
+            list_item.setInfo('music', item_info)
+        else:
+            list_item.setInfo('video', item_info)
 
     return list_item
+
+
+def is_audio_extension(extension):
+    try:
+        import mimetypes
+        mimetypes.init()
+        return mimetypes.guess_type('File.' + str(extension), False)[0].startswith('audio')
+    except Exception as ex:
+        logger.error('Error: %s', ex)
+        return False
+
+
+def require_audio_hack(path):
+    return KODI_VERSION == 18 and '?' in path
