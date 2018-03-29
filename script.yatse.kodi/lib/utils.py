@@ -105,6 +105,7 @@ def play_items(items, action):
         # Clear both playlist but only fill video as mixed playlist will work and audio will correctly play
         xbmc.PlayList(xbmc.PLAYLIST_MUSIC).clear()
         playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        playlist.clear()
         for item in items:
             list_item = get_kodi_list_item(item)
             playlist.add(list_item.getPath(), list_item)
@@ -141,17 +142,37 @@ def get_kodi_list_item(meta_data):
         item_info['genre'] = meta_data['categories']
     if 'average_rating' in meta_data:
         item_info['rating'] = meta_data['average_rating']
-    if 'description' in meta_data:
-        item_info['plot'] = re.sub('<[^<]+?>', '', meta_data['description'])
-    if 'ext' in meta_data:
-        is_audio = is_audio_extension(meta_data['ext'])
+
+    mime_type = None
+    if 'mime_type' in meta_data:
+        mime_type = meta_data['mime_type']
+    elif 'ext' in meta_data:
+        mime_type = get_mime_type(meta_data['ext'])
+
+    if 'media_type' in meta_data:
+        is_audio = meta_data['media_type'] == 'audio'
+    elif mime_type is not None:
+        is_audio = mime_type.startswith('audio')
+
+    if is_audio:
+        if 'artist' in meta_data:
+            item_info['artist'] = meta_data['artist']
+        if 'album' in meta_data:
+            item_info['album'] = meta_data['album']
+        if 'track_number' in meta_data:
+            item_info['tracknumber'] = meta_data['track_number']
+    else:
+        if 'description' in meta_data:
+            item_info['plot'] = re.sub('<[^<]+?>', '', meta_data['description'])
+
+    if KODI_VERSION >= 16 and mime_type is not None and (mime_type.startswith('audio') or mime_type.startswith('video')):
+        list_item.setMimeType(mime_type)
+        list_item.setContentLookup(False)
 
     if len(item_info) > 0:
         audio_hack = require_audio_hack(list_item.getPath())
         logger.info('Is audio: %s | Require hack: %s' % (is_audio, audio_hack))
         if is_audio or audio_hack:
-            if 'plot' in item_info:
-                del item_info['plot']
             list_item.setInfo('music', item_info)
         else:
             list_item.setInfo('video', item_info)
@@ -159,15 +180,15 @@ def get_kodi_list_item(meta_data):
     return list_item
 
 
-def is_audio_extension(extension):
+def require_audio_hack(path):
+    return KODI_VERSION == 18 and '?' in path
+
+
+def get_mime_type(extension):
     try:
         import mimetypes
         mimetypes.init()
-        return mimetypes.guess_type('File.' + str(extension), False)[0].startswith('audio')
+        return mimetypes.guess_type('File.' + str(extension), False)[0]
     except Exception as ex:
         logger.error('Error: %s', ex)
-        return False
-
-
-def require_audio_hack(path):
-    return KODI_VERSION == 18 and '?' in path
+        return None
