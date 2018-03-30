@@ -75,6 +75,9 @@ def play_url(url, action, meta_data=None):
             playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
             playlist.clear()
             if list_item is not None:
+                if list_item.getProperty('yatse_picture'):
+                    play_picture(list_item)
+                    return
                 playlist.add(url, list_item)
             else:
                 playlist.add(url)
@@ -108,6 +111,9 @@ def play_items(items, action):
         playlist.clear()
         for item in items:
             list_item = get_kodi_list_item(item)
+            if list_item.getProperty('yatse_picture'):
+                play_picture(list_item)
+                return
             playlist.add(list_item.getPath(), list_item)
         xbmc.Player().play(playlist)
     else:
@@ -129,6 +135,7 @@ def get_kodi_list_item(meta_data):
     list_item = xbmcgui.ListItem()
     item_info = {}
     is_audio = False
+    is_picture = False
     if 'title' in meta_data:
         list_item.setLabel(meta_data['title'])
         item_info['title'] = meta_data['title']
@@ -151,8 +158,10 @@ def get_kodi_list_item(meta_data):
 
     if 'media_type' in meta_data:
         is_audio = meta_data['media_type'] == 'audio'
+        is_picture = meta_data['media_type'] == 'picture'
     elif mime_type is not None:
         is_audio = mime_type.startswith('audio')
+        is_picture = mime_type.startswith('image')
 
     if is_audio:
         if 'artist' in meta_data:
@@ -161,23 +170,33 @@ def get_kodi_list_item(meta_data):
             item_info['album'] = meta_data['album']
         if 'track_number' in meta_data:
             item_info['tracknumber'] = meta_data['track_number']
-    else:
+    elif not is_picture:
         if 'description' in meta_data:
             item_info['plot'] = re.sub('<[^<]+?>', '', meta_data['description'])
 
-    if KODI_VERSION >= 16 and mime_type is not None and (mime_type.startswith('audio') or mime_type.startswith('video')):
+    if KODI_VERSION >= 16 and mime_type is not None and (mime_type.startswith('audio') or mime_type.startswith('video') or mime_type.startswith('image')):
         list_item.setMimeType(mime_type)
         list_item.setContentLookup(False)
 
     if len(item_info) > 0:
         audio_hack = require_audio_hack(list_item.getPath())
-        logger.info('Is audio: %s | Require hack: %s' % (is_audio, audio_hack))
+        logger.info('Is audio: %s | Is picture: %s | Require hack: %s' % (is_audio, is_picture, audio_hack))
         if is_audio or audio_hack:
             list_item.setInfo('music', item_info)
+        elif is_picture:
+            list_item.setProperty('yatse_picture', 'true')
+            list_item.setInfo('pictures', item_info)
         else:
             list_item.setInfo('video', item_info)
 
     return list_item
+
+
+def play_picture(list_item):
+    if xbmcgui.getCurrentWindowDialogId() == 12007:
+        xbmc.executeJSONRPC('[{"id":1,"jsonrpc":"2.0","method":"Playlist.add","params":{"playlistid":2,"item":{"file":"%s"}}},{"id":2,"jsonrpc":"2.0","method":"Player.GoTo","params":{"to":"next","playerid":2}}]' % list_item.getPath())
+    else:
+        xbmc.executeJSONRPC('{"id":1,"jsonrpc":"2.0","method":"Player.Open","params":{"item":{"file":"%s"}}}' % list_item.getPath())
 
 
 def require_audio_hack(path):
