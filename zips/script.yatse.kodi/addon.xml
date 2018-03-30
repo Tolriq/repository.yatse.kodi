@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.4.0" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.4.1" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
@@ -19,7 +19,8 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.4.0: Add support for pushing meta data when streaming from Yatse. (Except for videos containing ? on Kodi 18 due to a Kodi bug)
+        <news>1.4.1: Improve picture support.
+1.4.0: Add support for pushing meta data when streaming from Yatse. (Except for videos containing ? on Kodi 18 due to a Kodi bug).
 1.3.0: Add a patch for YoutubeDL issue on Windows Kodi + add support for plot as meta data.
 1.2.3: Youtube Add-On is mandatory to resolve youtube urls.
 1.2.2: Fix issue with busy dialog on Kodi 16 or less.
