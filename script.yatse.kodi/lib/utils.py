@@ -193,7 +193,7 @@ def get_kodi_list_item(meta_data):
 
 
 def play_picture(list_item):
-    if xbmcgui.getCurrentWindowDialogId() == 12007:
+    if xbmcgui.getCurrentWindowDialogId() == 12007 and KODI_VERSION >= 18:
         xbmc.executeJSONRPC('[{"id":1,"jsonrpc":"2.0","method":"Playlist.add","params":{"playlistid":2,"item":{"file":"%s"}}},{"id":2,"jsonrpc":"2.0","method":"Player.GoTo","params":{"to":"next","playerid":2}}]' % list_item.getPath())
     else:
         xbmc.executeJSONRPC('{"id":1,"jsonrpc":"2.0","method":"Player.Open","params":{"item":{"file":"%s"}}}' % list_item.getPath())
