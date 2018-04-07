@@ -114,7 +114,7 @@ def play_items(items, action):
             if list_item.getProperty('yatse_picture'):
                 play_picture(list_item)
                 return
-            playlist.add(list_item.getPath(), list_item)
+            playlist.add(get_list_item_path(list_item), list_item)
         xbmc.Player().play(playlist)
     else:
         if xbmc.Player().isPlayingAudio():
@@ -122,13 +122,13 @@ def play_items(items, action):
             playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
             for item in items:
                 list_item = get_kodi_list_item(item)
-                playlist.add(list_item.getPath(), list_item)
+                playlist.add(get_list_item_path(list_item), list_item)
         else:
             logger.info(u'Queuing %s items to video' % len(items))
             playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
             for item in items:
                 list_item = get_kodi_list_item(item)
-                playlist.add(list_item.getPath(), list_item)
+                playlist.add(get_list_item_path(list_item), list_item)
 
 
 def get_kodi_list_item(meta_data):
@@ -179,7 +179,7 @@ def get_kodi_list_item(meta_data):
         list_item.setContentLookup(False)
 
     if len(item_info) > 0:
-        audio_hack = require_audio_hack(list_item.getPath())
+        audio_hack = require_audio_hack(get_list_item_path(list_item))
         logger.info('Is audio: %s | Is picture: %s | Require hack: %s' % (is_audio, is_picture, audio_hack))
         if is_audio or audio_hack:
             list_item.setInfo('music', item_info)
@@ -194,9 +194,9 @@ def get_kodi_list_item(meta_data):
 
 def play_picture(list_item):
     if xbmcgui.getCurrentWindowDialogId() == 12007 and KODI_VERSION >= 18:
-        xbmc.executeJSONRPC('[{"id":1,"jsonrpc":"2.0","method":"Playlist.add","params":{"playlistid":2,"item":{"file":"%s"}}},{"id":2,"jsonrpc":"2.0","method":"Player.GoTo","params":{"to":"next","playerid":2}}]' % list_item.getPath())
+        xbmc.executeJSONRPC('[{"id":1,"jsonrpc":"2.0","method":"Playlist.add","params":{"playlistid":2,"item":{"file":"%s"}}},{"id":2,"jsonrpc":"2.0","method":"Player.GoTo","params":{"to":"next","playerid":2}}]' % get_list_item_path(list_item))
     else:
-        xbmc.executeJSONRPC('{"id":1,"jsonrpc":"2.0","method":"Player.Open","params":{"item":{"file":"%s"}}}' % list_item.getPath())
+        xbmc.executeJSONRPC('{"id":1,"jsonrpc":"2.0","method":"Player.Open","params":{"item":{"file":"%s"}}}' % get_list_item_path(list_item))
 
 
 def require_audio_hack(path):
@@ -211,3 +211,10 @@ def get_mime_type(extension):
     except Exception as ex:
         logger.error('Error: %s', ex)
         return None
+
+
+def get_list_item_path(list_item):
+    if KODI_VERSION >= 17:
+        return list_item.getPath()
+    else:
+        return list_item.getfilename()
