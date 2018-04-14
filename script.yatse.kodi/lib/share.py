@@ -62,20 +62,21 @@ def handle_unresolved_url(data, action):
         dialog = None
     if have_youtube_dl:
         logger.info(u'Trying to resolve with YoutubeDL: %s' % url)
-        youtube_dl_resolver = youtube_dl.YoutubeDL({'format': 'best', 'no_color': 'true'})
+        youtube_dl_resolver = youtube_dl.YoutubeDL({'format': 'best', 'no_color': 'true', 'ignoreerrors': 'true'})
         youtube_dl_resolver.add_default_info_extractors()
         try:
             result = youtube_dl_resolver.extract_info(url, download=False)
         except Exception as e:
             logger.error(u'Error with YoutubeDL: %s' % e)
             result = {}
-        if 'entries' in result:
+        if result is not None and 'entries' in result:
             logger.info(u'Playlist resolved by YoutubeDL: %s items' % len(result['entries']))
             item_list = []
-            for entry in result['entries']:
-                if 'url' in entry:
-                    item_list.append(entry)
-                    logger.info(u'Media found: %s' % entry['url'])
+            if result is not None:
+                for entry in result['entries']:
+                    if entry is not None and 'url' in entry:
+                        item_list.append(entry)
+                        logger.info(u'Media found: %s' % entry['url'])
             if len(item_list) > 0:
                 utils.play_items(item_list, action)
                 if dialog is not None:
