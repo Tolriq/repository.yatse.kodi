@@ -21,7 +21,7 @@ msgstr "Debug-Logging aktivieren"
 
 msgctxt "#32003"
 msgid "Open magnet with"
-msgstr "Öffnen Magnet-Link mit"
+msgstr "Öffne Magnet-Link mit"
 
 msgctxt "#32004"
 msgid "Unsupported command received."
