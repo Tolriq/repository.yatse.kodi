@@ -172,7 +172,11 @@ def get_kodi_list_item(meta_data):
             item_info['tracknumber'] = meta_data['track_number']
     elif not is_picture:
         if 'description' in meta_data:
-            item_info['plot'] = re.sub('<[^<]+?>', '', meta_data['description'])
+            try:
+                item_info['plot'] = re.sub('<[^<]+?>', '', meta_data['description'])
+            except Exception as ex:
+                logger.error('Problem with description: %s', ex)
+                pass
 
     if KODI_VERSION >= 16 and mime_type is not None and (mime_type.startswith('audio') or mime_type.startswith('video') or mime_type.startswith('image')):
         list_item.setMimeType(mime_type)
