@@ -84,7 +84,7 @@ def handle_unresolved_url(data, action):
                 return
             else:
                 logger.info(u'No playable urls in the playlist')
-        if 'url' in result:
+        if result is not None and 'url' in result:
             logger.info(u'Url resolved by YoutubeDL: %s' % result['url'])
             utils.play_url(result['url'], action, result)
             if dialog is not None:
