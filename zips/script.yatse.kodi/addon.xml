@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.4.5" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.4.6" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
@@ -19,20 +19,13 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.4.5: Ignore some regexp errors.
+        <news>1.4.6: Show script settings when trying to start from GUI.
+1.4.5: Ignore some regexp errors.
 1.4.4: Ignore errors on playlist containing invalid data.
 1.4.3: Fix issues on Kodi 16.
 1.4.2: Picture playlist support seems broken on Kodi 17.
 1.4.1: Improve picture support.
 1.4.0: Add support for pushing meta data when streaming from Yatse. (Except for videos containing ? on Kodi 18 due to a Kodi bug).
-1.3.0: Add a patch for YoutubeDL issue on Windows Kodi + add support for plot as meta data.
-1.2.3: Youtube Add-On is mandatory to resolve youtube urls.
-1.2.2: Fix issue with busy dialog on Kodi 16 or less.
-1.2.1: YoutubeDL is no more optional and used first to gather metadata and provide better integration with Yatse 8.2.5.
-1.1.0: Fix some magnet not working + add support for YATP torrent plugin.
-1.0.9: Fix possible issue with YoutubeDL and errors + Always fallback to try to play the url in case it's actually playable.
-1.0.8: Add German translation.
-1.0.7: Add support for Youtube-dl module as a secondary url resolver.
         </news>
     </extension>
 </addon>
