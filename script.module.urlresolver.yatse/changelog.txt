@@ -1,3 +1,63 @@
+[B]Version 5.0.15 (Apr 29, 2018)[/B]
+- Code Base Changes:
+    - None
+- Resolvers Added:
+    - streamapi
+- Resolvers Fixed/Updated:
+    - none
+- Resolvers Removed
+    - None
+- Languages Added/Updated
+	- None
+
+[B]Version 5.0.14 (Apr 24, 2018)[/B]
+- Code Base Changes:
+    - None
+- Resolvers Added:
+    - nxload
+- Resolvers Fixed/Updated:
+    - thevid
+- Resolvers Removed
+    - None
+- Languages Added/Updated
+	- None
+
+[B]Version 5.0.12 (Apr 22, 2018)[/B]
+- Code Base Changes:
+    - None
+- Resolvers Added:
+    - None
+- Resolvers Fixed/Updated:
+    - thevid
+- Resolvers Removed
+    - None
+- Languages Added/Updated
+	- None
+
+[B]Version 5.0.11 (Apr 21, 2018)[/B]
+- Code Base Changes:
+    - None
+- Resolvers Added:
+    - viduptv
+- Resolvers Fixed/Updated:
+    - None
+- Resolvers Removed
+    - vidupme
+- Languages Added/Updated
+	- None
+
+[B]Version 5.0.10 (Apr 7, 2018)[/B]
+- Code Base Changes:
+    - None
+- Resolvers Added:
+    - streamdor
+- Resolvers Fixed/Updated:
+    - None
+- Resolvers Removed
+    - None
+- Languages Added/Updated
+	- None
+
 [B]Version 5.0.09 (Mar 18, 2018)[/B]
 - Code Base Changes:
     - None

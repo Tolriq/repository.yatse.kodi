@@ -14,9 +14,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import os, thevid_gmu
+import os, thevid_gmu,re
 from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
+from lib import jsunpack
 
 logger = common.log_utils.Logger.get_logger(__name__)
 logger.disable()
