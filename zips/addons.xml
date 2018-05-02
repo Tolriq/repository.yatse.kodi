@@ -13,7 +13,7 @@
 	</extension>
 </addon>
 
-<addon id="script.module.urlresolver.yatse" name="URLResolver" version="5.0.09" provider-name="tvaddons">
+<addon id="script.module.urlresolver.yatse" name="URLResolver" version="5.0.15" provider-name="tvaddons">
 	<requires>
 		<import addon="xbmc.python" version="2.1.0" />
 		<import addon="plugin.video.youtube" optional="true" />
