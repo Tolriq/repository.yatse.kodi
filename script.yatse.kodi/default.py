@@ -4,6 +4,7 @@ import sys
 sys.argv.insert(1, 0)  # Stupid hack as calling scripts from JSON does not add script handle
 
 import xbmcgui
+import xbmcaddon
 from lib import share, stream, utils
 from lib.utils import logger, translation
 
@@ -21,8 +22,11 @@ commands = {
     'stream': stream.run
 }
 
-if argument['action'] in commands:
-    commands[argument['action']](argument)
+if 'action' not in argument:
+    xbmcaddon.Addon().openSettings()
 else:
-    logger.error("Command not supported: %s" % argument['action'])
-    xbmcgui.Dialog().ok(utils.ADDON_NAME, translation(32004), translation(32005))
+    if argument['action'] in commands:
+        commands[argument['action']](argument)
+    else:
+        logger.error("Command not supported: %s" % argument['action'])
+        xbmcgui.Dialog().ok(utils.ADDON_NAME, translation(32004), translation(32005))
