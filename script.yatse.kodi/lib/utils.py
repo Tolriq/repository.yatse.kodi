@@ -183,9 +183,8 @@ def get_kodi_list_item(meta_data):
         list_item.setContentLookup(False)
 
     if len(item_info) > 0:
-        audio_hack = require_audio_hack(get_list_item_path(list_item))
-        logger.info('Is audio: %s | Is picture: %s | Require hack: %s' % (is_audio, is_picture, audio_hack))
-        if is_audio or audio_hack:
+        logger.info('Is audio: %s | Is picture: %s' % (is_audio, is_picture))
+        if is_audio:
             list_item.setInfo('music', item_info)
         elif is_picture:
             list_item.setProperty('yatse_picture', 'true')
@@ -201,10 +200,6 @@ def play_picture(list_item):
         xbmc.executeJSONRPC('[{"id":1,"jsonrpc":"2.0","method":"Playlist.add","params":{"playlistid":2,"item":{"file":"%s"}}},{"id":2,"jsonrpc":"2.0","method":"Player.GoTo","params":{"to":"next","playerid":2}}]' % get_list_item_path(list_item))
     else:
         xbmc.executeJSONRPC('{"id":1,"jsonrpc":"2.0","method":"Player.Open","params":{"item":{"file":"%s"}}}' % get_list_item_path(list_item))
-
-
-def require_audio_hack(path):
-    return KODI_VERSION == 18 and '?' in path
 
 
 def get_mime_type(extension):
