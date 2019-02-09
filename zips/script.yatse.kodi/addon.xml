@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.4.6" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.5.0" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
@@ -19,7 +19,8 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.4.6: Show script settings when trying to start from GUI.
+        <news>1.5.0: Fix stream quality selection and remove no more needed Kodi 18 hack.
+1.4.6: Show script settings when trying to start from GUI.
 1.4.5: Ignore some regexp errors.
 1.4.4: Ignore errors on playlist containing invalid data.
 1.4.3: Fix issues on Kodi 16.
