@@ -4,6 +4,8 @@ import urllib
 import urlresolver
 import utils
 import xbmcgui
+import xbmcaddon
+import xbmc
 from utils import logger, KODI_VERSION
 
 have_youtube_dl = False
@@ -60,6 +62,13 @@ def handle_unresolved_url(data, action):
         dialog.update(-1)
     else:
         dialog = None
+    if 'youtube.com' in url or 'youtu.be' in url:
+        youtube_addon = xbmcaddon.Addon(id="plugin.video.youtube")
+        if youtube_addon:
+            if youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
+                logger.info(u'Youtube addon have DASH enabled use it')
+                xbmc.executeJSONRPC('{"id":1,"jsonrpc":"2.0","method":"Player.Open","params":{"item":{"file":"plugin://plugin.video.youtube/uri2addon/?uri=%s"}}}' % url)
+                return
     if have_youtube_dl:
         logger.info(u'Trying to resolve with YoutubeDL: %s' % url)
         youtube_dl_resolver = youtube_dl.YoutubeDL({'format': 'bestvideo+bestaudio/best', 'no_color': 'true', 'ignoreerrors': 'true'})
