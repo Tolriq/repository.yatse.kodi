@@ -62,7 +62,7 @@ def handle_unresolved_url(data, action):
         dialog = None
     if have_youtube_dl:
         logger.info(u'Trying to resolve with YoutubeDL: %s' % url)
-        youtube_dl_resolver = youtube_dl.YoutubeDL({'format': 'bestvideo/bestaudio/best', 'no_color': 'true', 'ignoreerrors': 'true'})
+        youtube_dl_resolver = youtube_dl.YoutubeDL({'format': 'bestvideo+bestaudio/best', 'no_color': 'true', 'ignoreerrors': 'true'})
         youtube_dl_resolver.add_default_info_extractors()
         try:
             result = youtube_dl_resolver.extract_info(url, download=False)
