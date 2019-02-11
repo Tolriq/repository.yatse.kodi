@@ -78,6 +78,8 @@ def handle_unresolved_url(data, action):
         except Exception as e:
             logger.error(u'Error with YoutubeDL: %s' % e)
             result = {}
+        if result is not None and 'manifest_url' in result:
+            logger.info(u'YoutubeDL full result as it contains a manifest url: %s' % result)
         if result is not None and 'entries' in result:
             logger.info(u'Playlist resolved by YoutubeDL: %s items' % len(result['entries']))
             item_list = []
@@ -99,6 +101,16 @@ def handle_unresolved_url(data, action):
             if dialog is not None:
                 dialog.close()
             return
+        if result is not None and 'requested_formats' in result:
+            for entry in result['requested_formats']:
+                if 'protocol' in entry and 'manifest_url' in entry:
+                    if 'm3u8' in entry['protocol']:
+                        logger.info(u'Url resolved by YoutubeDL: %s' % entry['manifest_url'])
+                        utils.play_url(entry['manifest_url'], action, result)
+                        if dialog is not None:
+                            dialog.close()
+                        return
+        logger.info(u'YoutubeDL full result: %s' % result)
         logger.error(u'Url not resolved by YoutubeDL: %s' % url)
 
     logger.info(u'Trying to resolve with urlResolver: %s' % url)
