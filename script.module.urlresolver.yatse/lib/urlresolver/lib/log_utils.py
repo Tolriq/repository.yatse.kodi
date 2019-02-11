@@ -20,7 +20,7 @@ import xbmc
 import xbmcaddon
 from xbmc import LOGDEBUG, LOGERROR, LOGFATAL, LOGINFO, LOGNONE, LOGNOTICE, LOGSEVERE, LOGWARNING  # @UnusedImport
 
-addonsmu = xbmcaddon.Addon('script.module.urlresolver.yatse')
+addonsmr = xbmcaddon.Addon('script.module.urlresolver.yatse')
 
 def execute_jsonrpc(command):
     if not isinstance(command, basestring):
@@ -39,8 +39,8 @@ def _is_debugging():
 
 class Logger(object):
     __loggers = {}
-    __name = addonsmu.getAddonInfo('name')
-    __addon_debug = addonsmu.getSetting('addon_debug') == 'true'
+    __name = addonsmr.getAddonInfo('name')
+    __addon_debug = addonsmr.getSetting('addon_debug') == 'true'
     __debug_on = _is_debugging()
     __disabled = set()
     

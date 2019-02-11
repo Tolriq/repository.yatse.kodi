@@ -17,10 +17,11 @@
 """
 
 import re
-from lib import aa_decoder
+from lib import aadecode
 from urlresolver import common
 from lib import helpers
 from urlresolver.resolver import UrlResolver, ResolverError
+
 
 class VideowoodResolver(UrlResolver):
     name = "videowood"
@@ -41,7 +42,7 @@ class VideowoodResolver(UrlResolver):
         
         match = re.search("split\('\|'\)\)\)\s*(.*?)</script>", html)
         if match:
-            aa_text = aa_decoder.AADecoder(match.group(1)).decode()
+            aa_text = aadecode.decode(match.group(1))
             match = re.search("'([^']+)", aa_text)
             if match:
                 stream_url = match.group(1)

@@ -29,8 +29,8 @@ logger.disable()
 
 class HugefilesResolver(UrlResolver):
     name = "hugefiles"
-    domains = ["hugefiles.net"]
-    pattern = '(?://|\.)(hugefiles\.net)/([0-9a-zA-Z/]+)'
+    domains = ["hugefiles.net", "hugefiles.cc"]
+    pattern = '(?://|\.)(hugefiles\.(?:net|cc))/([0-9a-zA-Z/]+)'
 
     def __init__(self):
         self.net = common.Net()
@@ -54,7 +54,7 @@ class HugefilesResolver(UrlResolver):
         # Re-grab data values
         data = helpers.get_hidden(html)
         data['referer'] = web_url
-        headers = {'User-Agent': common.IE_USER_AGENT}
+        headers = {'User-Agent': common.EDGE_USER_AGENT}
         logger.log_debug('HugeFiles - Requesting POST URL: %s with data: %s' % (web_url, data))
         request = urllib2.Request(web_url, data=urllib.urlencode(data), headers=headers)
 
@@ -65,4 +65,8 @@ class HugefilesResolver(UrlResolver):
         return stream_url
 
     def get_url(self, host, media_id):
-        return 'http://hugefiles.net/%s' % media_id
+        return 'http://hugefiles.cc/%s' % media_id
+
+    @classmethod
+    def isPopup(self):
+        return True

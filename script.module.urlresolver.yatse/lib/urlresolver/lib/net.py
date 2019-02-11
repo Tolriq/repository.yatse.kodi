@@ -75,7 +75,7 @@ class Net:
     _user_agent = 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0'
     _http_debug = False
 
-    def __init__(self, cookie_file='', proxy='', user_agent='', http_debug=False):
+    def __init__(self, cookie_file='', proxy='', user_agent='', ssl_verify=True, http_debug=False):
         '''
         Kwargs:
             cookie_file (str): Full path to a file to be used to load and save
@@ -96,6 +96,7 @@ class Net:
             self.set_proxy(proxy)
         if user_agent:
             self.set_user_agent(user_agent)
+        self._ssl_verify = ssl_verify
         self._http_debug = http_debug
         self._update_opener()
 
@@ -159,22 +160,36 @@ class Net:
         Builds and installs a new opener to be used by all future calls to
         :func:`urllib2.urlopen`.
         '''
+        handlers = [urllib2.HTTPCookieProcessor(self._cj), urllib2.HTTPBasicAuthHandler()]
+
         if self._http_debug:
-            http = urllib2.HTTPHandler(debuglevel=1)
+            handlers += [urllib2.HTTPHandler(debuglevel=1)]
         else:
-            http = urllib2.HTTPHandler()
+            handlers += [urllib2.HTTPHandler()]
 
         if self._proxy:
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self._cj),
-                                          urllib2.ProxyHandler({'http':
-                                                                self._proxy}),
-                                          urllib2.HTTPBasicAuthHandler(),
-                                          http)
+            handlers += [urllib2.ProxyHandler({'http': self._proxy})]
 
-        else:
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self._cj),
-                                          urllib2.HTTPBasicAuthHandler(),
-                                          http)
+        try:
+            import platform
+            node = platform.node().lower()
+        except:
+            node = ''
+
+        if not self._ssl_verify or node == 'xboxone':
+            try:
+                import ssl
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                if self._http_debug:
+                    handlers += [urllib2.HTTPSHandler(context=ctx, debuglevel=1)]
+                else:
+                    handlers += [urllib2.HTTPSHandler(context=ctx)]
+            except:
+                pass
+
+        opener = urllib2.build_opener(*handlers)
         urllib2.install_opener(opener)
 
     def http_GET(self, url, headers={}, compression=True):
@@ -236,6 +251,29 @@ class Net:
         '''
         request = urllib2.Request(url)
         request.get_method = lambda: 'HEAD'
+        request.add_header('User-Agent', self._user_agent)
+        for key in headers:
+            request.add_header(key, headers[key])
+        response = urllib2.urlopen(request)
+        return HttpResponse(response)
+
+    def http_DELETE(self, url, headers={}):
+        '''
+        Perform an HTTP DELETE request.
+
+        Args:
+            url (str): The URL to GET.
+
+        Kwargs:
+            headers (dict): A dictionary describing any headers you would like
+            to add to the request. (eg. ``{'X-Test': 'testing'}``)
+
+        Returns:
+            An :class:`HttpResponse` object containing headers and other
+            meta-information about the page.
+        '''
+        request = urllib2.Request(url)
+        request.get_method = lambda: 'DELETE'
         request.add_header('User-Agent', self._user_agent)
         for key in headers:
             request.add_header(key, headers[key])
@@ -321,12 +359,12 @@ class HttpResponse:
         r = re.search('<meta\s+http-equiv="Content-Type"\s+content="(?:.+?);\s+charset=(.+?)"', html, re.IGNORECASE)
         if r:
             encoding = r.group(1)
-        
+
         if encoding is not None:
             try: html = html.decode(encoding)
             except: pass
         return html
-        
+
     def get_headers(self, as_dict=False):
         '''Returns headers returned by the server.
         If as_dict is True, headers are returned as a dictionary otherwise a list'''

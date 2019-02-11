@@ -25,8 +25,9 @@ from urlresolver.resolver import UrlResolver, ResolverError
 
 logger = common.log_utils.Logger.get_logger(__name__)
 logger.disable()
-SV_SOURCE = 'https://raw.githubusercontent.com/tvaddonsco/script.module.urlresolver/master/lib/urlresolver/plugins/speedvid_gmu.py'
+SV_SOURCE = 'https://raw.githubusercontent.com/jsergio123/script.module.urlresolver/master/lib/urlresolver/plugins/speedvid_gmu.py'
 SV_PATH = os.path.join(common.plugins_path, 'speedvid_gmu.py')
+
 
 class SpeedVidResolver(UrlResolver):
     name = "SpeedVid"

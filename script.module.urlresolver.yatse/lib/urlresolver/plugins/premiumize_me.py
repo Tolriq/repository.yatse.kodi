@@ -1,6 +1,6 @@
 """
     urlresolver XBMC Addon
-    Copyright (C) 2013 Bstrdsmkr
+    Copyright (C) 2018 jsergio
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,10 +15,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
 import re
 import urllib
 import json
+import urllib2
+
+from lib import helpers
 from urlresolver import common
 from urlresolver.common import i18n
 from urlresolver.resolver import UrlResolver, ResolverError
@@ -26,7 +28,26 @@ from urlresolver.resolver import UrlResolver, ResolverError
 logger = common.log_utils.Logger.get_logger(__name__)
 logger.disable()
 
+CLIENT_ID = '522962560'
+USER_AGENT = 'URLResolver for Kodi/%s' % common.addon_version
 
+base_url = 'https://www.premiumize.me'
+api_path = '%s/api' % base_url
+direct_dl_path = '%s/transfer/directdl' % api_path
+list_folders_path = '%s/folder/list' % api_path
+create_folder_path = '%s/folder/create' % api_path
+delete_folder_path = '%s/folder/delete' % api_path
+list_transfers_path = '%s/transfer/list' % api_path
+create_transfer_path = '%s/transfer/create' % api_path
+delete_transfer_path = '%s/transfer/delete' % api_path
+clear_finished_path = '%s/transfer/clearfinished' % api_path
+check_cache_path = '%s/cache/check' % api_path
+list_services_path = '%s/services/list' % api_path
+folder_name = 'urlresolver'
+token_path = '%s/token' % base_url
+
+
+# noinspection PyBroadException
 class PremiumizeMeResolver(UrlResolver):
     name = "Premiumize.me"
     domains = ["*"]
@@ -36,29 +57,31 @@ class PremiumizeMeResolver(UrlResolver):
         self.hosts = []
         self.patterns = []
         self.net = common.Net()
-        self.scheme = 'https' if self.get_setting('use_https') == 'true' else 'http'
-        self.username = self.get_setting('username')
-        self.password = self.get_setting('password')
+        self.headers = {'User-Agent': USER_AGENT, 'Authorization': 'Bearer %s' % self.get_setting('token')}
 
-    def get_media_url(self, host, media_id):
+    def get_media_url(self, host, media_id, cached_only=False):
+        torrent = False
         cached = self.__check_cache(media_id)
+        media_id_lc = media_id.lower()
         if cached:
             logger.log_debug('Premiumize.me: %s is readily available to stream' % media_id)
-        url = '%s://api.premiumize.me/pm-api/v1.php?' % self.scheme
-        query = urllib.urlencode({'method': 'directdownloadlink', 'params[login]': self.username, 'params[pass]': self.password, 'params[link]': media_id})
-        url = url + query
-        response = self.net.http_GET(url).content
-        response = json.loads(response)
-        if 'status' in response:
-            if response['status'] == 200:
-                link = response['result']['location']
-            else:
-                raise ResolverError('Link Not Found: Error Code: %s' % response['status'])
-        else:
-            raise ResolverError('Unexpected Response Received')
+            if media_id_lc.endswith('.torrent') or media_id_lc.startswith('magnet:'):
+                torrent = True
+        elif media_id_lc.endswith('.torrent') or media_id_lc.startswith('magnet:'):
+            if self.get_setting('cached_only') == 'true' or cached_only:
+                raise ResolverError('Premiumize.me: Cached torrents only allowed to be initiated')
+            torrent = True
+            logger.log_debug('Premiumize.me: initiating transfer to cloud for %s' % media_id)
+            self.__initiate_transfer(media_id)
+            self.__clear_finished()
+            # self.__delete_folder()
 
-        logger.log_debug('Premiumize.me: Resolved to %s' % link)
-        return link
+        link = self.__direct_dl(media_id, torrent=torrent)
+        if link is not None:
+            logger.log_debug('Premiumize.me: Resolved to %s' % link)
+            return link + helpers.append_headers(self.headers)
+
+        raise ResolverError('Link Not Found')
 
     def get_url(self, host, media_id):
         return media_id
@@ -69,64 +92,289 @@ class PremiumizeMeResolver(UrlResolver):
     @common.cache.cache_method(cache_limit=8)
     def get_all_hosters(self):
         try:
-            url = '%s://api.premiumize.me/pm-api/v1.php' % self.scheme
-            query = urllib.urlencode({'method': 'hosterlist', 'params[login]': self.username, 'params[pass]': self.password})
-            url = url + '?' + query
-            response = self.net.http_GET(url).content
-            response = json.loads(response)
-            result = response.get('result', {})
-            tldlist = result.get('tldlist', [])
-            patterns = result.get('regexlist', [])
+            response = self.net.http_GET(list_services_path, headers=self.headers).content
+            result = json.loads(response)
+            aliases = result.get('aliases', {})
+            patterns = result.get('regexpatterns', {})
+            tldlist = []
+            for tlds in aliases.values():
+                for tld in tlds:
+                    tldlist.append(tld)
+            if self.get_setting('torrents') == 'true':
+                tldlist.extend([u'torrent', u'magnet'])
             regex_list = []
-            for regex in patterns:
-                try: regex_list.append(re.compile(regex))
-                except:
-                    common.logger.log_warning('Throwing out bad Premiumize regex: %s' % regex)
-            logger.log_debug('Premiumize.me patterns: %s (%d) regex: (%d) hosts: %s' % (patterns, len(patterns), len(regex_list), tldlist))
+            for regexes in patterns.values():
+                for regex in regexes:
+                    try:
+                        regex_list.append(re.compile(regex))
+                    except:
+                        common.logger.log_warning('Throwing out bad Premiumize regex: %s' % regex)
+            logger.log_debug('Premiumize.me patterns: %s regex: (%d) hosts: %s' % (patterns, len(regex_list), tldlist))
             return tldlist, regex_list
         except Exception as e:
-            logger.log_error('Error getting Premiumize hosts: %s' % (e))
+            logger.log_error('Error getting Premiumize hosts: %s' % e)
         return [], []
 
     def valid_url(self, url, host):
+        if url and self.get_setting('torrents') == 'true':
+            url_lc = url.lower()
+            if url_lc.endswith('.torrent') or url_lc.startswith('magnet:'):
+                return True
+
         if not self.patterns or not self.hosts:
             self.hosts, self.patterns = self.get_all_hosters()
 
         if url:
-            if not url.endswith('/'): url += '/'
+            if not url.endswith('/'):
+                url += '/'
             for pattern in self.patterns:
                 if pattern.findall(url):
                     return True
         elif host:
-            if host.startswith('www.'): host = host.replace('www.', '')
+            if host.startswith('www.'):
+                host = host.replace('www.', '')
             if any(host in item for item in self.hosts):
                 return True
 
         return False
 
-    def __check_cache(self, item):
+    def __check_cache(self, media_id):
         try:
-            url = '%s://www.premiumize.me/api/cache/check?customer_id=%s&pin=%s&items[]=%s' % (self.scheme, self.username, self.password, item)
-            result = self.net.http_GET(url).content
+            url = '%s?items[]=%s' % (check_cache_path, media_id)
+            result = self.net.http_GET(url, headers=self.headers).content
             result = json.loads(result)
             if 'status' in result:
                 if result.get('status') == 'success':
                     response = result.get('response', False)
                     if isinstance(response, list):
                         return response[0]
-            return False
         except:
+            pass
+
+        return False
+
+    def __create_transfer(self, media_id):
+        folder_id = self.__create_folder()
+        if not folder_id == "":
+            try:
+                data = urllib.urlencode({'src': media_id, 'folder_id': folder_id})
+                response = self.net.http_POST(create_transfer_path, form_data=data, headers=self.headers).content
+                result = json.loads(response)
+                if 'status' in result:
+                    if result.get('status') == 'success':
+                        logger.log_debug('Transfer successfully started to the Premiumize.me cloud')
+                        return result.get('id', "")
+            except:
+                pass
+
+        return ""
+
+    def __list_transfer(self, transfer_id):
+        if not transfer_id == "":
+            try:
+                response = self.net.http_GET(list_transfers_path, headers=self.headers).content
+                result = json.loads(response)
+                if 'status' in result:
+                    if result.get('status') == 'success':
+                        for item in result.get("transfers"):
+                            if item.get('id') == transfer_id:
+                                return item
+            except:
+                pass
+
+        return {}
+
+    def __delete_transfer(self, transfer_id):
+        if not transfer_id == "":
+            try:
+                data = urllib.urlencode({'id': transfer_id})
+                response = self.net.http_POST(delete_transfer_path, form_data=data, headers=self.headers).content
+                result = json.loads(response)
+                if 'status' in result:
+                    if result.get('status') == 'success':
+                        logger.log_debug('Transfer ID "%s" deleted from the Premiumize.me cloud' % transfer_id)
+                        return True
+            except:
+                pass
+
+        return False
+
+    def __initiate_transfer(self, media_id, interval=5):
+        transfer_id = self.__create_transfer(media_id)
+        transfer_info = self.__list_transfer(transfer_id)
+        if transfer_info:
+            line1 = transfer_info.get('name')
+            line2 = 'Saving torrent to the Premiumize Cloud'
+            line3 = transfer_info.get('message')
+            with common.kodi.ProgressDialog('URL Resolver Premiumize Transfer', line1, line2, line3) as pd:
+                while not transfer_info.get('status') == 'seeding':
+                    common.kodi.sleep(1000 * interval)
+                    transfer_info = self.__list_transfer(transfer_id)
+                    line1 = transfer_info.get('name')
+                    line3 = transfer_info.get('message')
+                    logger.log_debug(line3)
+                    pd.update(int(float(transfer_info.get('progress')) * 100), line1=line1, line3=line3)
+                    if pd.is_canceled():
+                        self.__delete_transfer(transfer_id)
+                        # self.__delete_folder()
+                        raise ResolverError('Transfer ID %s canceled by user' % transfer_id)
+                    elif transfer_info.get('status') == 'stalled':  # not sure on this value
+                        self.__delete_transfer(transfer_id)
+                        # self.__delete_folder()
+                        raise ResolverError('Transfer ID %s has stalled' % transfer_id)
+            common.kodi.sleep(1000 * interval)  # allow api time to generate the stream_link
+        self.__delete_transfer(transfer_id)  # just in case __clear_finished() doesnt work
+
+        return
+
+    def __direct_dl(self, media_id, torrent=False):
+        try:
+            data = urllib.urlencode({'src': media_id})
+            response = self.net.http_POST(direct_dl_path, form_data=data, headers=self.headers).content
+            result = json.loads(response)
+            if 'status' in result:
+                if result.get('status') == 'success':
+                    if torrent:
+                        _videos = []
+                        for items in result.get("content"):
+                            if not items.get("stream_link", "") == "":
+                                _videos.append(items)
+                        try:
+                            return max(_videos, key=lambda x: x.get('size')).get('stream_link', None)
+                        except ValueError:
+                            raise ResolverError('Failed to locate largest video file')
+                    else:
+                        return result.get('location', None)
+                else:
+                    raise ResolverError('Link Not Found: Error Code: %s' % result.get('status'))
+            else:
+                raise ResolverError('Unexpected Response Received')
+        except:
+            pass
+
+        return None
+
+    def __list_folders(self):
+        try:
+            response = self.net.http_GET(list_folders_path, headers=self.headers).content
+            result = json.loads(response)
+            if 'status' in result:
+                if result.get('status') == 'success':
+                    for items in result.get("content"):
+                        if items.get('type') == 'folder' and items.get("name") == folder_name:
+                            return items.get("id", "")
+        except:
+            pass
+
+        return ""
+
+    def __create_folder(self):
+        folder_id = self.__list_folders()
+        if folder_id == "":
+            try:
+                data = urllib.urlencode({'name': folder_name})
+                response = self.net.http_POST(create_folder_path, form_data=data, headers=self.headers).content
+                result = json.loads(response)
+                if 'status' in result:
+                    if result.get('status') == 'success':
+                        logger.log_debug('Folder named "%s" created on the Premiumize.me cloud' % folder_name)
+                        return result.get('id', "")
+            except:
+                pass
+
+            return ""
+        else:
+            return folder_id
+
+    def __delete_folder(self):
+        folder_id = self.__list_folders()
+        if not folder_id == "":
+            try:
+                data = urllib.urlencode({'id': folder_id})
+                response = self.net.http_POST(delete_folder_path, form_data=data, headers=self.headers).content
+                result = json.loads(response)
+                if 'status' in result:
+                    if result.get('status') == 'success':
+                        logger.log_debug('Folder named "%s" deleted from the Premiumize.me cloud' % folder_name)
+                        return True
+            except:
+                pass
+
+        return False
+
+    def __clear_finished(self):
+        try:
+            result = self.net.http_POST(clear_finished_path, form_data={}, headers=self.headers).content
+            result = json.loads(result)
+            if 'status' in result:
+                if result.get('status') == 'success':
+                    logger.log_debug('Finished transfers successfully cleared from the Premiumize.me cloud')
+                    return True
+        except:
+            pass
+
+        return False
+
+    # SiteAuth methods
+    def login(self):
+        if not self.get_setting('token'):
+            self.authorize_resolver()
+
+    def authorize_resolver(self):
+        data = {'response_type': 'device_code', 'client_id': CLIENT_ID}
+        js_result = json.loads(self.net.http_POST(token_path, form_data=data, headers=self.headers).content)
+        line1 = 'Go to URL: %s' % js_result.get('verification_uri')
+        line2 = 'When prompted enter: %s' % js_result.get('user_code')
+        with common.kodi.CountdownDialog('URL Resolver Premiumize Authorization', line1, line2, countdown=120,
+                                         interval=js_result.get('interval', 5)) as cd:
+            result = cd.start(self.__get_token, [js_result.get('device_code')])
+
+        # cancelled
+        if result is None:
+            return
+        return result
+
+    def __get_token(self, device_code):
+        try:
+            data = {'grant_type': 'device_code', 'client_id': CLIENT_ID, 'code': device_code}
+            logger.log_debug('Authorizing Premiumize.me: %s' % CLIENT_ID)
+            js_result = json.loads(self.net.http_POST(token_path, form_data=data, headers=self.headers).content)
+            logger.log_debug('Authorizing Premiumize.me Result: |%s|' % js_result)
+            self.set_setting('token', js_result['access_token'])
+        except urllib2.HTTPError as e:
+            try:
+                js_result = json.loads(e.read())
+                if 'error' in js_result:
+                    msg = js_result.get('error')
+                else:
+                    msg = 'Unknown Error (1)'
+            except:
+                msg = 'Unknown Error (2)'
+            logger.log_debug('Premiumize.me Authorization Failed: %s' % msg)
             return False
+        except Exception as e:
+            logger.log_debug('Exception during PM auth: %s' % e)
+            return False
+        else:
+            return True
+
+    def reset_authorization(self):
+        self.set_setting('token', '')
+
+    @classmethod
+    def _is_enabled(cls):
+        return cls.get_setting('enabled') == 'true' and cls.get_setting('token')
 
     @classmethod
     def get_settings_xml(cls):
-        xml = super(cls, cls).get_settings_xml(include_login=False)
-        xml.append('<setting id="%s_use_https" type="bool" label="%s" default="true"/>' % (cls.__name__, i18n('use_https')))
-        xml.append('<setting id="%s_login" type="bool" label="%s" default="false"/>' % (cls.__name__, i18n('login')))
-        xml.append('<setting id="%s_username" enable="eq(-1,true)" type="text" label="%s" default=""/>' % (cls.__name__, i18n('customer_id')))
-        xml.append('<setting id="%s_password" enable="eq(-2,true)" type="text" label="%s" option="hidden" default=""/>' % (cls.__name__, i18n('pin')))
+        xml = super(cls, cls).get_settings_xml()
+        xml.append('<setting id="%s_torrents" type="bool" label="%s" default="true"/>' % (cls.__name__, i18n('torrents')))
+        xml.append('<setting id="%s_cached_only" enable="eq(-1,true)" type="bool" label="%s" default="false" />' % (cls.__name__, i18n('cached_only')))
+        xml.append('<setting id="%s_auth" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver.yatse/?mode=auth_pm)"/>' % (cls.__name__, i18n('auth_my_account')))
+        xml.append('<setting id="%s_reset" type="action" label="%s" action="RunPlugin(plugin://script.module.urlresolver.yatse/?mode=reset_pm)"/>' % (cls.__name__, i18n('reset_my_auth')))
+        xml.append('<setting id="%s_token" visible="false" type="text" default=""/>' % cls.__name__)
         return xml
 
     @classmethod
-    def isUniversal(self):
+    def isUniversal(cls):
         return True

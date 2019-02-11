@@ -10,10 +10,10 @@ msgstr ""
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Mike Bike, 2017\n"
 "Language-Team: Dutch ()\n"
-"Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: nl\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "#33000"
@@ -26,7 +26,8 @@ msgstr "Om deze video af te spelen, is authorisatie nodig"
 
 msgctxt "#33002"
 msgid "Visit the link below to authorize the devices on your network:"
-msgstr "Bezoek de link hieronder om dit apparaat te autorizeren in uw netwerk:"
+msgstr ""
+"Bezoek de link hieronder om dit apparaat te autorizeren in uw netwerk:"
 
 msgctxt "#33003"
 msgid "[B][COLOR blue]%s[/COLOR][/B] then click 'Pair'"
@@ -184,10 +185,6 @@ msgctxt "#33041"
 msgid "No IP Authorization"
 msgstr "Geen IP Authorisatie"
 
-msgctxt "#33042"
-msgid "Client ID"
-msgstr ""
-
 msgctxt "#33043"
 msgid "Vshare.eu Stream Authorization"
 msgstr "Vshare.eu Stream Authorisatie"
@@ -195,13 +192,3 @@ msgstr "Vshare.eu Stream Authorisatie"
 msgctxt "#33044"
 msgid "Flashx Stream Authorization"
 msgstr "Flashx Stream Authorisatie"
-
-#, fuzzy
-msgctxt "#33045"
-msgid "AllDebrid Authorization Reset"
-msgstr "Real-Debrid Authorisatie Reset"
-
-#, fuzzy
-msgctxt "#33046"
-msgid "AllDebrid Resolver Authorized"
-msgstr "Real-Debrid Resolver Authoriseren"

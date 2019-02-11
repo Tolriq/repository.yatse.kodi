@@ -33,8 +33,8 @@ FILE_URL = API_BASE_URL + '/file/info?file={media_id}'
 
 class OpenLoadResolver(UrlResolver):
     name = "openload"
-    domains = ["openload.io", "openload.co", "oload.tv", "oload.stream"]
-    pattern = '(?://|\.)(o(?:pen)??load\.(?:io|co|tv|stream))/(?:embed|f)/([0-9a-zA-Z-_]+)'
+    domains = ["openload.io", "openload.co", "oload.tv", "oload.stream", "oload.win", "oload.download", "oload.info", "oload.icu", "oload.fun", "openload.pw"]
+    pattern = '(?://|\.)(o(?:pen)??load\.(?:io|co|tv|stream|win|download|info|icu|fun|pw))/(?:embed|f)/([0-9a-zA-Z-_]+)'
 
     def __init__(self):
         self.net = common.Net()
@@ -104,3 +104,7 @@ class OpenLoadResolver(UrlResolver):
         xml.append('<setting id="%s_key" type="text" label="    %s" default="" option="hidden" visible="eq(-2,true)"/>' % (cls.__name__, i18n('decrypt_key')))
         xml.append('<setting id="%s_etag" type="text" default="" visible="false"/>' % (cls.__name__))
         return xml
+
+    @classmethod
+    def isPopup(self):
+        return True

@@ -11,10 +11,10 @@ msgstr ""
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Jose Riha, 2017\n"
 "Language-Team: Slovak ()\n"
-"Language: sk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: sk\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
 msgctxt "#33000"
@@ -185,10 +185,6 @@ msgctxt "#33041"
 msgid "No IP Authorization"
 msgstr "Chýba IP autorizácia"
 
-msgctxt "#33042"
-msgid "Client ID"
-msgstr ""
-
 msgctxt "#33043"
 msgid "Vshare.eu Stream Authorization"
 msgstr "Vshare.eu autorizácia streamu"
@@ -196,13 +192,3 @@ msgstr "Vshare.eu autorizácia streamu"
 msgctxt "#33044"
 msgid "Flashx Stream Authorization"
 msgstr "Flashx autorizácia streamu"
-
-#, fuzzy
-msgctxt "#33045"
-msgid "AllDebrid Authorization Reset"
-msgstr "Real-Debrid resolver resetovaný"
-
-#, fuzzy
-msgctxt "#33046"
-msgid "AllDebrid Resolver Authorized"
-msgstr "Real-Debrid resolver autorizovaný"

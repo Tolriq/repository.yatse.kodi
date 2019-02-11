@@ -25,7 +25,7 @@ STRINGS = {
     'auto_update': 33005,
     'update_url': 33006,
     'decrypt_key': 33007,
-    'thevideo_auth_header': 33008,
+    'vevio_auth_header': 33008,
     'vidup_auth_header': 33009,
     'enable_universal': 33010,
     'auto_pick': 33011,
@@ -63,5 +63,11 @@ STRINGS = {
     'vshareeu_auth_header': 33043,
     'flashx_auth_header': 33044,
     'ad_auth_reset': 33045,
-    'ad_authorized': 33046
+    'ad_authorized': 33046,
+    'enable_popups': 33047,
+    'api_key': 33048,
+    'torrents': 33049,
+    'cached_only': 33050,
+    'pm_auth_reset': 33051,
+    'pm_authorized': 33052
 }

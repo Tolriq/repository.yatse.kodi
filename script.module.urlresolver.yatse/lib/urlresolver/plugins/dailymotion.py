@@ -40,7 +40,9 @@ class DailymotionResolver(UrlResolver):
             url_back = '/embed/video/%s' % (media_id)
             web_url = 'http://www.dailymotion.com/family_filter?enable=false&urlback=%s' % (urllib.quote_plus(url_back))
             html = self.net.http_GET(url=web_url, headers=headers).content"""
-            
+        
+        if '"title":"Content rejected."' in html: raise ResolverError('This video has been removed due to a copyright claim.')
+        
         match = re.search('var\s+config\s*=\s*(.*?}});', html)
         if not match: raise ResolverError('Unable to locate config')
         try: js_data = json.loads(match.group(1))

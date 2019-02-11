@@ -36,12 +36,14 @@ class VidloxResolver(UrlResolver):
         web_url = self.get_url(host, media_id)
         headers = {'User-Agent': common.FF_USER_AGENT, 'Referer': web_url}
         html = self.net.http_GET(web_url, headers=headers).content
-        _srcs = re.search(r'sources\s*:\s*\[(.+?)\]', html)
 
-        if _srcs:
-            srcs = helpers.scrape_sources(_srcs.group(1), patterns=['''["'](?P<url>http[^"']+)'''])
-            if srcs:
-                return helpers.pick_source(srcs) + helpers.append_headers(headers)
+        if html:
+            _srcs = re.search(r'sources\s*:\s*\[(.+?)\]', html)
+            if _srcs:
+                srcs = helpers.scrape_sources(_srcs.group(1), patterns=['''["'](?P<url>http[^"']+)'''],
+                                              result_blacklist=['.m3u8'])
+                if srcs:
+                    return helpers.pick_source(srcs) + helpers.append_headers(headers)
 
         raise ResolverError('Unable to locate link')
 

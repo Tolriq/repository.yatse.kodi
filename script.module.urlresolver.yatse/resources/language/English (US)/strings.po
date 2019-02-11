@@ -10,10 +10,10 @@ msgstr ""
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: tknorris, 2016\n"
 "Language-Team: English (United States) ()\n"
-"Language: en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: en_US\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "#33000"
@@ -49,8 +49,8 @@ msgid "Decryption Key"
 msgstr "Decryption Key"
 
 msgctxt "#33008"
-msgid "TheVideo.me Stream Authorization"
-msgstr "TheVideo.me Stream Authorization"
+msgid "Vev.io Stream Authorization"
+msgstr "Vev.io Stream Authorization"
 
 msgctxt "#33009"
 msgid "VidUP.me Stream Authorization"
@@ -196,12 +196,34 @@ msgctxt "#33044"
 msgid "Flashx Stream Authorization"
 msgstr "Flashx Stream Authorization"
 
-#, fuzzy
 msgctxt "#33045"
 msgid "AllDebrid Authorization Reset"
-msgstr "Real-Debrid Authorization Reset"
+msgstr "AllDebrid Authorization Reset"
 
-#, fuzzy
 msgctxt "#33046"
 msgid "AllDebrid Resolver Authorized"
-msgstr "Real-Debrid Resolver Authorized"
+msgstr "AllDebrid Resolver Authorized"
+
+msgctxt "#33047"
+msgid "Enable PopUps"
+msgstr "Enable PopUps"
+
+msgctxt "#33048"
+msgid "API Key"
+msgstr "API Key"
+
+msgctxt "#33049"
+msgid "Torrent Support"
+msgstr "Torrent Support"
+
+msgctxt "#33050"
+msgid "Cached torrents only"
+msgstr "Cached torrents only"
+
+msgctxt "#33051"
+msgid "Premiumize Authorization Reset"
+msgstr "Premiumize Authorization Reset"
+
+msgctxt "#33052"
+msgid "Premiumize Resolver Authorized"
+msgstr "Premiumize Resolver Authorized"

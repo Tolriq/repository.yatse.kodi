@@ -17,29 +17,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from lib import helpers
 from urlresolver import common
-from urlresolver.resolver import UrlResolver, ResolverError
-from lib import jsunpack
-import re
+
 logger = common.log_utils.Logger.get_logger(__name__)
 logger.disable()
 
-
-
-        
 def get_media_url(url):
-        net = common.Net()
-    
-        html = net.http_GET(url).content
-        match=re.compile('<script>(.+?)</script>',re.DOTALL).findall(html)
-        
-        for source in match:
-            source =source.strip()
-            try:
-
-                UNPACKED = jsunpack.unpack(source)
-                if 'sfilea' in UNPACKED:
-                    FINAL_URL = re.compile('sfilea="(.+?)"').findall(UNPACKED)[0]
-                    if not 'http' in FINAL_URL:
-                        FINAL_URL = 'http:'+ FINAL_URL
-                    return FINAL_URL
-            except:pass
+    return helpers.get_media_url(url, patterns=['''var [a-z0-9]+=\s*["'](?P<url>//[^"']+\.(?:mp4|m3u8)\?[^"']+)'''], generic_patterns=False).replace(' ', '%20')

@@ -1,9 +1,9 @@
-# Addon Name: URLResolver
+# Addon Name: UrlResolver
 # Addon id: script.module.urlresolver
 # Addon Provider:
 msgid ""
 msgstr ""
-"Project-Id-Version: script.module.urlresolver 4.0.15\n"
+"Project-Id-Version: script.module.urlresolver 5.0.01\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "PO-Revision-Date: 2017-12-11 21:47+0100\n"
 "Language-Team: Norwegian Bokmal\n"
