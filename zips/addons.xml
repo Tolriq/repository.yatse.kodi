@@ -13,7 +13,7 @@
 	</extension>
 </addon>
 
-<addon id="script.module.urlresolver.yatse" name="URLResolver" version="5.0.15" provider-name="tvaddons">
+<addon id="script.module.urlresolver.yatse" name="URLResolver" version="5.0.32" provider-name="tvaddons">
 	<requires>
 		<import addon="xbmc.python" version="2.1.0" />
 		<import addon="plugin.video.youtube" optional="true" />
@@ -35,7 +35,7 @@
 	</extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.5.0" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.5.1" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
@@ -55,7 +55,7 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.5.0: Fix stream quality selection and remove no more needed Kodi 18 hack.
+        <news>1.5.1: Use Youtube plugin when sharing if you activate MPEG-DASH to support 1080p+ quality. Add support for some more streams type. Remove no more needed Kodi 18 hack.
 1.4.6: Show script settings when trying to start from GUI.
 1.4.5: Ignore some regexp errors.
 1.4.4: Ignore errors on playlist containing invalid data.
