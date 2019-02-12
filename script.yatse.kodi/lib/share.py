@@ -25,6 +25,8 @@ try:
 except ImportError:
     logger.info('YoutubeDL not present')
 
+have_adaptive_plugin = '"enabled":true' in xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,"params":{"addonid":"inputstream.adaptive", "properties": ["enabled"]}}')
+
 
 def run(argument):
     if argument['type'] == 'magnet':
@@ -51,6 +53,7 @@ def handle_magnet(data):
 
 
 def handle_unresolved_url(data, action):
+    result_logged = False
     url = urllib.unquote(data)
     if not utils.kodi_is_playing():
         if KODI_VERSION <= 16:
@@ -80,6 +83,7 @@ def handle_unresolved_url(data, action):
             result = {}
         if result is not None and 'manifest_url' in result:
             logger.info(u'YoutubeDL full result as it contains a manifest url: %s' % result)
+            result_logged = True
         if result is not None and 'entries' in result:
             logger.info(u'Playlist resolved by YoutubeDL: %s items' % len(result['entries']))
             item_list = []
@@ -102,6 +106,16 @@ def handle_unresolved_url(data, action):
                 dialog.close()
             return
         if result is not None and 'requested_formats' in result:
+            if have_adaptive_plugin:
+                logger.info(u'Adaptive plugin enabled looking for dash content')
+                for entry in result['requested_formats']:
+                    if 'container' in entry and 'manifest_url' in entry:
+                        if 'dash' in entry['container']:
+                            logger.info(u'Url resolved by YoutubeDL: %s' % entry['manifest_url'])
+                            utils.play_url(entry['manifest_url'], action, result, True)
+                            if dialog is not None:
+                                dialog.close()
+                            return
             for entry in result['requested_formats']:
                 if 'protocol' in entry and 'manifest_url' in entry:
                     if 'm3u8' in entry['protocol']:
@@ -110,7 +124,8 @@ def handle_unresolved_url(data, action):
                         if dialog is not None:
                             dialog.close()
                         return
-        logger.info(u'YoutubeDL full result: %s' % result)
+        if not result_logged:
+            logger.info(u'YoutubeDL full result: %s' % result)
         logger.error(u'Url not resolved by YoutubeDL: %s' % url)
 
     logger.info(u'Trying to resolve with urlResolver: %s' % url)

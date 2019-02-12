@@ -62,11 +62,18 @@ def kodi_is_playing():
     return xbmc.Player().isPlaying()
 
 
-def play_url(url, action, meta_data=None):
+def play_url(url, action, meta_data=None, use_adaptive=False):
     if meta_data is not None:
         list_item = get_kodi_list_item(meta_data)
+        if use_adaptive:
+            list_item.setProperty('inputstreamaddon', 'inputstream.adaptive')
+            list_item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
     else:
         list_item = None
+        if use_adaptive:
+            list_item = xbmcgui.ListItem(path=url)
+            list_item.setProperty('inputstreamaddon', 'inputstream.adaptive')
+            list_item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
     if url:
         if (action == 'play') or (not xbmc.Player().isPlaying()):
             logger.info(u'Playing url: %s' % url)
