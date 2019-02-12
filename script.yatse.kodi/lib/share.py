@@ -78,20 +78,21 @@ def handle_unresolved_url(data, action):
         youtube_dl_resolver.add_default_info_extractors()
         try:
             result = youtube_dl_resolver.extract_info(url, download=False)
+            if result is None:
+                result = {}
         except Exception as e:
             logger.error(u'Error with YoutubeDL: %s' % e)
             result = {}
-        if result is not None and 'manifest_url' in result:
+        if 'manifest_url' in result:
             logger.info(u'YoutubeDL full result as it contains a manifest url: %s' % result)
             result_logged = True
-        if result is not None and 'entries' in result:
+        if 'entries' in result:
             logger.info(u'Playlist resolved by YoutubeDL: %s items' % len(result['entries']))
             item_list = []
-            if result is not None:
-                for entry in result['entries']:
-                    if entry is not None and 'url' in entry:
-                        item_list.append(entry)
-                        logger.info(u'Media found: %s' % entry['url'])
+            for entry in result['entries']:
+                if entry is not None and 'url' in entry:
+                    item_list.append(entry)
+                    logger.info(u'Media found: %s' % entry['url'])
             if len(item_list) > 0:
                 utils.play_items(item_list, action)
                 if dialog is not None:
@@ -99,13 +100,13 @@ def handle_unresolved_url(data, action):
                 return
             else:
                 logger.info(u'No playable urls in the playlist')
-        if result is not None and 'url' in result:
+        if 'url' in result:
             logger.info(u'Url resolved by YoutubeDL: %s' % result['url'])
             utils.play_url(result['url'], action, result)
             if dialog is not None:
                 dialog.close()
             return
-        if result is not None and 'requested_formats' in result:
+        if 'requested_formats' in result:
             if have_adaptive_plugin:
                 logger.info(u'Adaptive plugin enabled looking for dash content')
                 for entry in result['requested_formats']:
