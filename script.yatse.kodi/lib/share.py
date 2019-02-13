@@ -3,10 +3,9 @@ import urllib
 
 import urlresolver
 import utils
-import xbmcgui
-import xbmcaddon
 import xbmc
-from utils import logger, KODI_VERSION
+import xbmcaddon
+from utils import logger
 
 have_youtube_dl = False
 try:
@@ -55,16 +54,7 @@ def handle_magnet(data):
 def handle_unresolved_url(data, action):
     result_logged = False
     url = urllib.unquote(data)
-    if not utils.kodi_is_playing():
-        if KODI_VERSION <= 16:
-            dialog = xbmcgui.DialogProgress()
-            dialog.create("YATSE", "%s %s" % (action, url))
-        else:
-            dialog = xbmcgui.DialogBusy()
-            dialog.create()
-        dialog.update(-1)
-    else:
-        dialog = None
+    utils.show_info_notification(utils.translation(32007))
     if 'youtube.com' in url or 'youtu.be' in url:
         youtube_addon = xbmcaddon.Addon(id="plugin.video.youtube")
         if youtube_addon:
@@ -95,16 +85,12 @@ def handle_unresolved_url(data, action):
                     logger.info(u'Media found: %s' % entry['url'])
             if len(item_list) > 0:
                 utils.play_items(item_list, action)
-                if dialog is not None:
-                    dialog.close()
                 return
             else:
                 logger.info(u'No playable urls in the playlist')
         if 'url' in result:
             logger.info(u'Url resolved by YoutubeDL: %s' % result['url'])
             utils.play_url(result['url'], action, result)
-            if dialog is not None:
-                dialog.close()
             return
         if 'requested_formats' in result:
             if have_adaptive_plugin:
@@ -114,16 +100,12 @@ def handle_unresolved_url(data, action):
                         if 'dash' in entry['container']:
                             logger.info(u'Url resolved by YoutubeDL: %s' % entry['manifest_url'])
                             utils.play_url(entry['manifest_url'], action, result, True)
-                            if dialog is not None:
-                                dialog.close()
                             return
             for entry in result['requested_formats']:
                 if 'protocol' in entry and 'manifest_url' in entry:
                     if 'm3u8' in entry['protocol']:
                         logger.info(u'Url resolved by YoutubeDL: %s' % entry['manifest_url'])
                         utils.play_url(entry['manifest_url'], action, result)
-                        if dialog is not None:
-                            dialog.close()
                         return
         if not result_logged:
             logger.info(u'YoutubeDL full result: %s' % result)
@@ -134,11 +116,9 @@ def handle_unresolved_url(data, action):
     if stream_url:
         logger.info(u'Url resolved by urlResolver: %s' % stream_url)
         utils.play_url(stream_url, action)
-        if dialog is not None:
-            dialog.close()
         return
 
     logger.info(u'Trying to play as basic url: %s' % url)
     utils.play_url(url, action)
-    if dialog is not None:
-        dialog.close()
+    if url:
+        utils.show_error_notification(utils.translation(32006))

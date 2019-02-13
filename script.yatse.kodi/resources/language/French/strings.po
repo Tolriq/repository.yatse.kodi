@@ -34,3 +34,7 @@ msgstr "Merci de vérifier qu'il n'y ait pas une mise à jour de ce plugin."
 msgctxt "#32006"
 msgid "Impossible de résoudre cette url."
 msgstr ""
+
+msgctxt "#32007"
+msgid "Identification du média partagé."
+msgstr ""

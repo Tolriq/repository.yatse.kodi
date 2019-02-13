@@ -58,6 +58,14 @@ def translation(id_value):
     return ADDON.getLocalizedString(id_value)
 
 
+def show_info_notification(message):
+    xbmcgui.Dialog().notification(ADDON_NAME, message, xbmcgui.NOTIFICATION_INFO, 3000, False)
+
+
+def show_error_notification(message):
+    xbmcgui.Dialog().notification(ADDON_NAME, message, xbmcgui.NOTIFICATION_ERROR, 4000, False)
+
+
 def kodi_is_playing():
     return xbmc.Player().isPlaying()
 
@@ -105,8 +113,7 @@ def play_url(url, action, meta_data=None, use_adaptive=False):
                 else:
                     playlist.add(url)
     else:
-        dialog = xbmcgui.Dialog()
-        dialog.notification(ADDON_NAME, translation(32006), xbmcgui.NOTIFICATION_INFO, 5000)
+        show_error_notification(translation(32006))
 
 
 def play_items(items, action):

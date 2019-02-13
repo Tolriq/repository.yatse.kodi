@@ -34,3 +34,7 @@ msgstr ""
 msgctxt "#32006"
 msgid "Unable to resolve the shared url."
 msgstr ""
+
+msgctxt "#32007"
+msgid "Resolving shared media."
+msgstr ""
