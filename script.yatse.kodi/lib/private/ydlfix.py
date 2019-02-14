@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-import youtube_dl
+import sys
+
+from ..youtube_dl import utils
 
 
 # noinspection PyUnresolvedReferences
@@ -15,6 +17,7 @@ def fixed_unified_strdate(date_str, day_first=True):
     _, date_str = extract_timezone(date_str)
 
     for expression in date_formats(day_first):
+        # noinspection PyBroadException
         try:
             upload_date = datetime.datetime.strptime(date_str, expression).strftime('%Y%m%d')
         except ValueError:
@@ -24,6 +27,7 @@ def fixed_unified_strdate(date_str, day_first=True):
     if upload_date is None:
         timetuple = email.utils.parsedate_tz(date_str)
         if timetuple:
+            # noinspection PyBroadException
             try:
                 upload_date = datetime.datetime(*timetuple[:6]).strftime('%Y%m%d')
             except ValueError:
@@ -53,6 +57,7 @@ def fixed_unified_timestamp(date_str, day_first=True):
         date_str = date_str[:-len(m.group('tz'))]
 
     for expression in date_formats(day_first):
+        # noinspection PyBroadException
         try:
             dt = datetime.datetime.strptime(date_str, expression) - timezone + datetime.timedelta(hours=pm_delta)
             return calendar.timegm(dt.timetuple())
@@ -65,6 +70,18 @@ def fixed_unified_timestamp(date_str, day_first=True):
         return calendar.timegm(timetuple) + pm_delta * 3600
 
 
+# noinspection PyMethodMayBeStatic
+class ReplacementStdErr(sys.stderr.__class__):
+    def isatty(self):
+        return False
+
+
 def patch_youtube_dl():
-    youtube_dl.utils.unified_strdate.__code__ = fixed_unified_strdate.__code__
-    youtube_dl.utils.unified_timestamp.__code__ = fixed_unified_timestamp.__code__
+    utils.unified_strdate.__code__ = fixed_unified_strdate.__code__
+    utils.unified_timestamp.__code__ = fixed_unified_timestamp.__code__
+    sys.stderr.__class__ = ReplacementStdErr
+    try:
+        import _subprocess
+    except ImportError:
+        # noinspection PyProtectedMember
+        from subprocess import _subprocess

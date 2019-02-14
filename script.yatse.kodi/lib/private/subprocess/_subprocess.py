@@ -1,0 +1,16 @@
+# Fake _subprocess.py to allow subprocess to import
+from ...utils import logger
+
+logger.info(u'Using fake _subprocess module')
+STD_INPUT_HANDLE = -10
+STD_OUTPUT_HANDLE = -11
+STD_ERROR_HANDLE = -12
+DUPLICATE_SAME_ACCESS = 2
+STARTF_USESTDHANDLES = 256
+STARTF_USESHOWWINDOW = 1
+SW_HIDE = 0
+INFINITE = 65535
+WAIT_OBJECT_0 = 0
+CREATE_NEW_CONSOLE = 16
+CREATE_NEW_PROCESS_GROUP = 512
+STILL_ACTIVE = 259

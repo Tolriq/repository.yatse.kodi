@@ -3,7 +3,6 @@
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
-        <import addon="script.module.youtube.dl"/>
         <import addon="plugin.video.youtube"/>
     </requires>
     <extension point="xbmc.python.script" library="default.py">
