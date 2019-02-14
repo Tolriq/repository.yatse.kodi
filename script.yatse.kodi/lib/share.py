@@ -85,14 +85,14 @@ def resolve_with_youtube_dl(url, parameters, action):
 
 def handle_unresolved_url(data, action):
     url = urllib.unquote(data)
-    logger.info(u'Trying to resolve URL: %s' % url)
+    logger.info(u'Trying to resolve URL (%s): %s' % (action, url))
     utils.show_info_notification(utils.translation(32007))
     if 'youtube.com' in url or 'youtu.be' in url:
         youtube_addon = xbmcaddon.Addon(id="plugin.video.youtube")
         if youtube_addon:
             if youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
                 logger.info(u'Youtube addon have DASH enabled use it')
-                xbmc.executeJSONRPC('{"id":1,"jsonrpc":"2.0","method":"Player.Open","params":{"item":{"file":"plugin://plugin.video.youtube/uri2addon/?uri=%s"}}}' % url)
+                utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % url, action)
                 return
     logger.info(u'Trying to resolve with YoutubeDL')
     result = resolve_with_youtube_dl(url, {'format': 'best', 'no_color': 'true', 'ignoreerrors': 'true'}, action)
