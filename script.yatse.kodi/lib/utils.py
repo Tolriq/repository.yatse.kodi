@@ -58,8 +58,8 @@ def translation(id_value):
     return ADDON.getLocalizedString(id_value)
 
 
-def show_info_notification(message):
-    xbmcgui.Dialog().notification(ADDON_NAME, message, xbmcgui.NOTIFICATION_INFO, 3000, False)
+def show_info_notification(message, duration=3000):
+    xbmcgui.Dialog().notification(ADDON_NAME, message, xbmcgui.NOTIFICATION_INFO, duration, False)
 
 
 def show_error_notification(message):

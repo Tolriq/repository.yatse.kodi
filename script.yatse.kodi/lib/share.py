@@ -86,7 +86,10 @@ def resolve_with_youtube_dl(url, parameters, action):
 def handle_unresolved_url(data, action):
     url = urllib.unquote(data)
     logger.info(u'Trying to resolve URL (%s): %s' % (action, url))
-    utils.show_info_notification(utils.translation(32007))
+    if xbmc.Player().isPlaying():
+        utils.show_info_notification(utils.translation(32007), 1000)
+    else:
+        utils.show_info_notification(utils.translation(32007))
     if 'youtube.com' in url or 'youtu.be' in url:
         youtube_addon = xbmcaddon.Addon(id="plugin.video.youtube")
         if youtube_addon:
