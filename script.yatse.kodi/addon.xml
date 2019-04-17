@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.6.1" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.6.2" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
@@ -18,7 +18,8 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.6.1: Fix queuing youtube video when using Dash.
+        <news>1.6.2: Update YoutubeDL
+1.6.1: Fix queuing youtube video when using Dash.
 1.6.0: Embed youtubeDL for faster update than official addon + display notification instead of busy dialog for better Kodi 18 support.
 1.5.1: Use Youtube plugin when sharing if you activate MPEG-DASH to support 1080p+ quality. Add support for some more streams type. Remove no more needed Kodi 18 hack.
 1.4.6: Show script settings when trying to start from GUI.
