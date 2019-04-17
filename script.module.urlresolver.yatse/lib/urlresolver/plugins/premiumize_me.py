@@ -28,7 +28,7 @@ from urlresolver.resolver import UrlResolver, ResolverError
 logger = common.log_utils.Logger.get_logger(__name__)
 logger.disable()
 
-CLIENT_ID = '522962560'
+CLIENT_ID = '854653386'
 USER_AGENT = 'URLResolver for Kodi/%s' % common.addon_version
 
 base_url = 'https://www.premiumize.me'
