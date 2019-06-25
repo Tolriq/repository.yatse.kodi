@@ -16,6 +16,7 @@ from ..jsinterp import JSInterpreter
 from ..swfinterp import SWFInterpreter
 from ..compat import (
     compat_chr,
+    compat_HTTPError,
     compat_kwargs,
     compat_parse_qs,
     compat_urllib_parse_unquote,
@@ -288,10 +289,25 @@ class YoutubeEntryListBaseInfoExtractor(YoutubeBaseInfoExtractor):
             if not mobj:
                 break
 
-            more = self._download_json(
-                'https://youtube.com/%s' % mobj.group('more'), playlist_id,
-                'Downloading page #%s' % page_num,
-                transform_source=uppercase_escape)
+            count = 0
+            retries = 3
+            while count <= retries:
+                try:
+                    # Downloading page may result in intermittent 5xx HTTP error
+                    # that is usually worked around with a retry
+                    more = self._download_json(
+                        'https://youtube.com/%s' % mobj.group('more'), playlist_id,
+                        'Downloading page #%s%s'
+                        % (page_num, ' (retry #%d)' % count if count else ''),
+                        transform_source=uppercase_escape)
+                    break
+                except ExtractorError as e:
+                    if isinstance(e.cause, compat_HTTPError) and e.cause.code in (500, 503):
+                        count += 1
+                        if count <= retries:
+                            continue
+                    raise
+
             content_html = more['content_html']
             if not content_html.strip():
                 # Some webpages show a "Load more" button but they don't
@@ -484,6 +500,12 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
 
         # RTMP (unnamed)
         '_rtmp': {'protocol': 'rtmp'},
+
+        # av01 video only formats sometimes served with "unknown" codecs
+        '394': {'acodec': 'none', 'vcodec': 'av01.0.05M.08'},
+        '395': {'acodec': 'none', 'vcodec': 'av01.0.05M.08'},
+        '396': {'acodec': 'none', 'vcodec': 'av01.0.05M.08'},
+        '397': {'acodec': 'none', 'vcodec': 'av01.0.05M.08'},
     }
     _SUBTITLE_FORMATS = ('srv1', 'srv2', 'srv3', 'ttml', 'vtt')
 
@@ -1290,11 +1312,18 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
 
     def _parse_sig_js(self, jscode):
         funcname = self._search_regex(
-            (r'(["\'])signature\1\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+            (r'\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+             r'\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+             r'(?P<sig>[a-zA-Z0-9$]+)\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\)',
+             # Obsolete patterns
+             r'(["\'])signature\1\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
              r'\.sig\|\|(?P<sig>[a-zA-Z0-9$]+)\(',
-             r'yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*c\s*&&\s*d\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?(?P<sig>[a-zA-Z0-9$]+)\(',
-             r'\bc\s*&&\s*d\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?\s*(?P<sig>[a-zA-Z0-9$]+)\(',
-             r'\bc\s*&&\s*d\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\('),
+             r'yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+             r'\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+             r'\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+             r'\bc\s*&&\s*a\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+             r'\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+             r'\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\('),
             jscode, 'Initial JS player signature function name', group='sig')
 
         jsi = JSInterpreter(jscode)
@@ -1559,8 +1588,15 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
         return video_id
 
     def _extract_annotations(self, video_id):
-        url = 'https://www.youtube.com/annotations_invideo?features=1&legacy=1&video_id=%s' % video_id
-        return self._download_webpage(url, video_id, note='Searching for annotations.', errnote='Unable to download video annotations.')
+        return self._download_webpage(
+            'https://www.youtube.com/annotations_invideo', video_id,
+            note='Downloading annotations',
+            errnote='Unable to download video annotations', fatal=False,
+            query={
+                'features': 1,
+                'legacy': 1,
+                'video_id': video_id,
+            })
 
     @staticmethod
     def _extract_chapters(description, duration):
@@ -1773,9 +1809,6 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
             raise ExtractorError(
                 'YouTube said: %s' % unavailable_message, expected=True, video_id=video_id)
 
-        if video_info.get('license_info'):
-            raise ExtractorError('This video is DRM protected.', expected=True)
-
         video_details = try_get(
             player_response, lambda x: x['videoDetails'], dict) or {}
 
@@ -1911,7 +1944,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
             formats = []
             for url_data_str in encoded_url_map.split(','):
                 url_data = compat_parse_qs(url_data_str)
-                if 'itag' not in url_data or 'url' not in url_data:
+                if 'itag' not in url_data or 'url' not in url_data or url_data.get('drm_families'):
                     continue
                 stream_type = int_or_none(try_get(url_data, lambda x: x['stream_type'][0]))
                 # Unsupported FORMAT_STREAM_TYPE_OTF
@@ -1971,7 +2004,8 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
 
                     signature = self._decrypt_signature(
                         encrypted_sig, video_id, player_url, age_gate)
-                    url += '&signature=' + signature
+                    sp = try_get(url_data, lambda x: x['sp'][0], compat_str) or 'signature'
+                    url += '&%s=%s' % (sp, signature)
                 if 'ratebypass' not in url:
                     url += '&ratebypass=yes'
 
@@ -2035,8 +2069,8 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 url_or_none(try_get(
                     player_response,
                     lambda x: x['streamingData']['hlsManifestUrl'],
-                    compat_str)) or
-                url_or_none(try_get(
+                    compat_str))
+                or url_or_none(try_get(
                     video_info, lambda x: x['hlsvp'][0], compat_str)))
             if manifest_url:
                 formats = []
@@ -2084,8 +2118,13 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
         else:
             self._downloader.report_warning('unable to extract uploader nickname')
 
-        channel_id = self._html_search_meta(
-            'channelId', video_webpage, 'channel id')
+        channel_id = (
+            str_or_none(video_details.get('channelId'))
+            or self._html_search_meta(
+                'channelId', video_webpage, 'channel id', default=None)
+            or self._search_regex(
+                r'data-channel-external-id=(["\'])(?P<id>(?:(?!\1).)+)\1',
+                video_webpage, 'channel id', default=None, group='id'))
         channel_url = 'http://www.youtube.com/channel/%s' % channel_id if channel_id else None
 
         # thumbnail image
@@ -2205,6 +2244,10 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 r'<[^>]+class=["\']watch-view-count[^>]+>\s*([\d,\s]+)', video_webpage,
                 'view count', default=None))
 
+        average_rating = (
+            float_or_none(video_details.get('averageRating'))
+            or try_get(video_info, lambda x: float_or_none(x['avg_rating'][0])))
+
         # subtitles
         video_subtitles = self.extract_subtitles(video_id, video_webpage)
         automatic_captions = self.extract_automatic_captions(video_id, video_webpage)
@@ -2301,6 +2344,9 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                         '"token" parameter not in video info for unknown reason',
                         video_id=video_id)
 
+        if not formats and (video_info.get('license_info') or try_get(player_response, lambda x: x['streamingData']['licenseInfos'])):
+            raise ExtractorError('This video is DRM protected.', expected=True)
+
         self._sort_formats(formats)
 
         self.mark_watched(video_id, video_info, player_response)
@@ -2331,7 +2377,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
             'view_count': view_count,
             'like_count': like_count,
             'dislike_count': dislike_count,
-            'average_rating': float_or_none(video_info.get('avg_rating', [None])[0]),
+            'average_rating': average_rating,
             'formats': formats,
             'is_live': is_live,
             'start_time': start_time,
@@ -2542,9 +2588,9 @@ class YoutubePlaylistIE(YoutubePlaylistBaseInfoExtractor):
 
         search_title = lambda class_name: get_element_by_attribute('class', class_name, webpage)
         title_span = (
-            search_title('playlist-title') or
-            search_title('title long-title') or
-            search_title('title'))
+            search_title('playlist-title')
+            or search_title('title long-title')
+            or search_title('title'))
         title = clean_html(title_span)
 
         return self.playlist_result(url_results, playlist_id, title)
