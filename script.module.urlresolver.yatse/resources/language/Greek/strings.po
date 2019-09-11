@@ -219,8 +219,32 @@ msgstr "Αποθηκευμένα torrent μόνο"
 
 msgctxt "#33051"
 msgid "Premiumize Authorization Reset"
-msgstr "Επαναφορά έγκρισης premiumize"
+msgstr "Επαναφορά έγκρισης Premiumize"
 
 msgctxt "#33052"
 msgid "Premiumize Resolver Authorized"
-msgstr "Ο επιλυτής premiumize έχει εγκριθεί"
+msgstr "Ο επιλυτής Premiumize έχει εγκριθεί"
+
+msgctxt "#33053"
+msgid "Linksnappy Authorization Reset"
+msgstr "Επαναφορά έγκρισης linksnappy"
+
+msgctxt "#33054"
+msgid "Linksnappy Resolver Authorized"
+msgstr "Ο επιλυτής Linksnappy έχει εγκριθεί"
+
+msgctxt "#33055"
+msgid "Download rate:"
+msgstr "Ρυθμός μεταφόρτωσης:"
+
+msgctxt "#33056"
+msgid "Peers:"
+msgstr "Ομότιμοι:"
+
+msgctxt "#33057"
+msgid "δευτερόλεπτα"
+msgstr ""
+
+msgctxt "#33058"
+msgid "Cached filehosts only"
+msgstr "Αποθηκευμένα αρχεία μόνο"

@@ -1,9 +1,6 @@
 """
-    OVERALL CREDIT TO:
-        t0mm0, Eldorado, VOINAGE, BSTRDMKR, tknorris, smokdpi, TheHighway
-
-    urlresolver XBMC Addon
-    Copyright (C) 2011 t0mm0
+    plugin for UrlResolver
+    Copyright (C) 2019 gujal
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,32 +17,32 @@
 """
 import re
 from lib import helpers
+from lib import jsunpack
 from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
 
-
-class VidloxResolver(UrlResolver):
-    name = "vidlox"
-    domains = ['vidlox.tv', 'vidlox.me', 'vidlox.xyz']
-    pattern = r'(?://|\.)(vidlox\.(?:tv|me|xyz))/(?:embed-|source/)?([0-9a-zA-Z]+)'
+class VidiaResolver(UrlResolver):
+    name = "vidia"
+    domains = ["vidia.tv"]
+    pattern = r'(?://|\.)(vidia\.tv)/(?:embed-)?([0-9a-zA-Z]+)'
 
     def __init__(self):
         self.net = common.Net()
 
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
-        headers = {'User-Agent': common.FF_USER_AGENT}
+        headers = {'User-Agent': common.RAND_UA}
         html = self.net.http_GET(web_url, headers=headers).content
 
-        if html:
-            _srcs = re.search(r'sources\s*:\s*\[(.+?)\]', html)
-            if _srcs:
-                srcs = helpers.scrape_sources(_srcs.group(1), patterns=['''["'](?P<url>http[^"']+)'''], result_blacklist=['.m3u8'])
-                if srcs:
-                    headers.update({'Referer': web_url})
-                    return helpers.pick_source(srcs) + helpers.append_headers(headers)
+        r = re.search("script'>(eval.*?)</script", html, re.DOTALL)
+        
+        if r:
+            html = jsunpack.unpack(r.group(1))
+            src = re.search(r'file:\s*"([^"]+mp4)',html)
+            if src:
+                return src.group(1) + helpers.append_headers(headers)
 
-        raise ResolverError('Unable to locate link')
-
+        raise ResolverError('File Not Found or removed')
+ 
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='https://vidlox.me/embed-{media_id}.html')
+        return self._default_get_url(host, media_id, template='https://{host}/embed-{media_id}.html')

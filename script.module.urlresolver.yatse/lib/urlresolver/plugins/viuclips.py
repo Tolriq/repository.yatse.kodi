@@ -1,9 +1,6 @@
 """
-    OVERALL CREDIT TO:
-        t0mm0, Eldorado, VOINAGE, BSTRDMKR, tknorris, smokdpi, TheHighway
-
-    urlresolver XBMC Addon
-    Copyright (C) 2011 t0mm0
+    plugin in for UrlResolver
+    Copyright (C) 2019 gujal
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,16 +15,16 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import re
 from lib import helpers
 from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
 
-
-class VidloxResolver(UrlResolver):
-    name = "vidlox"
-    domains = ['vidlox.tv', 'vidlox.me', 'vidlox.xyz']
-    pattern = r'(?://|\.)(vidlox\.(?:tv|me|xyz))/(?:embed-|source/)?([0-9a-zA-Z]+)'
+class ViuclipsResolver(UrlResolver):
+    name = "viuclips"
+    domains = ["viuclips.net", "veuclips.com"]
+    pattern = r'(?://|\.)(v[ie]uclips\.(?:net|com))/(?:embed/)?([0-9a-zA-Z]+)'
 
     def __init__(self):
         self.net = common.Net()
@@ -35,17 +32,13 @@ class VidloxResolver(UrlResolver):
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
         headers = {'User-Agent': common.FF_USER_AGENT}
-        html = self.net.http_GET(web_url, headers=headers).content
+        response = self.net.http_GET(web_url, headers=headers)
+        html = response.content
+        if 'video has been removed' not in html:
+            source = re.findall('hls:"([^"]+)', html)[0]
+            return source + helpers.append_headers({'User-Agent': common.FF_USER_AGENT})
 
-        if html:
-            _srcs = re.search(r'sources\s*:\s*\[(.+?)\]', html)
-            if _srcs:
-                srcs = helpers.scrape_sources(_srcs.group(1), patterns=['''["'](?P<url>http[^"']+)'''], result_blacklist=['.m3u8'])
-                if srcs:
-                    headers.update({'Referer': web_url})
-                    return helpers.pick_source(srcs) + helpers.append_headers(headers)
-
-        raise ResolverError('Unable to locate link')
+        raise ResolverError('File Not Found or removed')
 
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='https://vidlox.me/embed-{media_id}.html')
+        return self._default_get_url(host, media_id, template='https://player.viuclips.net/embed/{media_id}')

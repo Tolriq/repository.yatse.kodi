@@ -69,5 +69,11 @@ STRINGS = {
     'torrents': 33049,
     'cached_only': 33050,
     'pm_auth_reset': 33051,
-    'pm_authorized': 33052
+    'pm_authorized': 33052,
+    'ls_auth_reset': 33053,
+    'ls_authorized': 33054,
+    'download_rate': 33055,
+    'peer_number': 33056,
+    'seconds': 33057,
+    'cached_files_only': 33058
 }

@@ -1,6 +1,7 @@
-'''
-    urlresolver Kodi plugin
-    Copyright (C) 2019 gujal
+"""
+    URLResolver Kodi module
+    Bitchute plugin
+    Copyright (C) 2019 twilight0
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,34 +15,34 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
-import re
+from __generic_resolver__ import UrlResolver
 from lib import helpers
-from lib import jsunpack
 from urlresolver import common
-from urlresolver.resolver import UrlResolver, ResolverError
 
-class VideoApneResolver(UrlResolver):
-    name = "videoapne"
-    domains = ["videoapne.co"]
-    pattern = '(?://|\.)(videoapne\.co)/(?:embed-)?([0-9a-zA-Z]+)'
-    
+
+class BitchuteResolver(UrlResolver):
+
+    name = "bitchute.com"
+    domains = ['bitchute.com']
+    pattern = r'(?://|\.)(bitchute\.com)/(?:video|embed)/([\w-]+)/'
+
     def __init__(self):
+
         self.net = common.Net()
 
     def get_media_url(self, host, media_id):
+
         web_url = self.get_url(host, media_id)
-        headers = {'User-Agent': common.RAND_UA,
-                   'Referer': web_url}
-        html = self.net.http_GET(web_url, headers=headers).content
-        
-        r = re.search('file:"([^"]+m3u8)"', html)
-        
-        if r:
-            return r.group(1) + helpers.append_headers(headers)
-        
-        raise ResolverError('Video cannot be located.')
+        response = self.net.http_GET(web_url)
+
+        sources = helpers.scrape_sources(
+            response.content, patterns=[r'''source src=['"](?P<url>https.+?\.mp4)['"] type="video/mp4''']
+        )
+
+        return helpers.pick_source(sources)
 
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='http://{host}/{media_id}.html')
+
+        return self._default_get_url(host, media_id, 'https://www.{host}/video/{media_id}')

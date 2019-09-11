@@ -20,14 +20,14 @@ from urlresolver.resolver import UrlResolver, ResolverError
 
 logger = common.log_utils.Logger.get_logger(__name__)
 logger.disable()
-VID_SOURCE = 'https://raw.githubusercontent.com/jsergio123/script.module.urlresolver/master/lib/urlresolver/plugins/thevid_gmu.py'
+VID_SOURCE = 'https://raw.githubusercontent.com/jsergio123/script.module.urlresolver.yatse/master/lib/urlresolver/plugins/thevid_gmu.py'
 VID_PATH = os.path.join(common.plugins_path, 'thevid_gmu.py')
 
 
 class TheVidResolver(UrlResolver):
     name = "TheVid"
-    domains = ["thevid.net"]
-    pattern = '(?://|\.)(thevid\.net)/(?:video|e|v)/([A-Za-z0-9]+)'
+    domains = ["thevid.net", "thevid.tv"]
+    pattern = '(?://|\.)(thevid\.(?:net|tv))/(?:video|e|v)/([A-Za-z0-9]+)'
     
     def __init__(self):
         self.net = common.Net()

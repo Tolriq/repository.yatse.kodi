@@ -1,3 +1,107 @@
+[B]Version 5.0.39 (August 18, 2019)[/B]
+- Code Base Changes:
+    - headers fix
+- Resolvers Added:
+    - vup
+    - viuclips
+    - vidia
+    - chromecast.video
+- Resolvers Fixed/Updated:
+    - fembed
+    - openload
+    - vidwatch
+    - vidlox
+    - onlystream
+    - verystream
+    - vkprime
+    - vkspeed
+    - ok.ru
+- Resolvers Removed
+    - none
+- Languages Added/Updated
+    - none
+
+[B]Version 5.0.38 (June 25, 2019)[/B]
+- Code Base Changes:
+    - none
+- Resolvers Added:
+    - streamvid
+    - videoz
+- Resolvers Fixed/Updated:
+    - fembed
+    - verystream
+    - linksnappy
+    - videozupload
+    - xstreamcdn
+    - mp4upload
+    - rapidvideocom
+- Resolvers Removed
+    - none
+- Languages Added/Updated
+    - none
+
+[B]Version 5.0.37 (June 23, 2019)[/B]
+- Code Base Changes:
+    - none
+- Resolvers Added:
+    - linksnappy
+    - holavid
+    - onlystream
+- Resolvers Fixed/Updated:
+    - verystream
+    - mp4upload
+    - xstreamcdn
+    - videozupload
+    - videoapne
+- Resolvers Removed
+    - none
+- Languages Added/Updated
+    - Dutch
+
+[B]Version 5.0.36 (May 18, 2019)[/B]
+- Code Base Changes:
+    - none
+- Resolvers Added:
+    - vidtodo
+    - idtbox
+- Resolvers Fixed/Updated:
+    - tunepk
+    - veoh
+    - alldebrid (torrent support)
+- Resolvers Removed
+    - none
+- Languages Added/Updated
+    - none
+
+[B]Version 5.0.35 (April 27, 2019)[/B]
+- Code Base Changes:
+    - none
+- Resolvers Added:
+    - verystream
+- Resolvers Fixed/Updated:
+    - vidoza
+    - uptobox
+    - vidlox
+- Resolvers Removed
+    - vidtodo
+- Languages Added/Updated
+    - none
+
+[B]Version 5.0.34 (April 21, 2019)[/B]
+- Code Base Changes:
+    - common.py
+- Resolvers Added:
+    - hxload
+- Resolvers Fixed/Updated:
+    - realdebrid
+    - fembed
+    - thevid
+    - vidtodo
+- Resolvers Removed
+    - vidzella
+- Languages Added/Updated
+    - none
+
 [B]Version 5.0.33 (April 07, 2019)[/B]
 - Code Base Changes:
     - premiumize api change (you must re-auth)

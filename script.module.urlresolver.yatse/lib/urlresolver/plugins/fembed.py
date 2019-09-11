@@ -23,8 +23,8 @@ from urlresolver.resolver import UrlResolver, ResolverError
 
 class FembedResolver(UrlResolver):
     name = "fembed"
-    domains = ["fembed.com", "24hd.club"]
-    pattern = '(?://|\.)((?:fembed\.com|24hd\.club))/v/([a-zA-Z0-9]+)'
+    domains = ["fembed.com", "24hd.club", "vcdn.io", "sharinglink.club", "votrefiles.club", "femoload.xyz", "dailyplanet.pw"]
+    pattern = r'(?://|\.)((?:fembed|24hd|vcdn|sharinglink|votrefiles|femoload|dailyplanet)\.(?:com|club|io|xyz|pw))/v/([a-zA-Z0-9-]+)'
 
     def __init__(self):
         self.net = common.Net()
