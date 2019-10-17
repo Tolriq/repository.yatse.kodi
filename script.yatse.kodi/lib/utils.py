@@ -2,6 +2,7 @@
 import logging
 import re
 
+import sys
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -11,6 +12,15 @@ ADDON_VERSION = ADDON.getAddonInfo('version')
 ADDON_NAME = ADDON.getAddonInfo('name')
 ADDON_ID = ADDON.getAddonInfo('id')
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split()[0][:2])
+
+
+def is_python_3():
+    return sys.version_info > (3, 0)
+
+
+if is_python_3():
+    # noinspection PyShadowingBuiltins
+    unicode = str
 
 
 class XBMCHandler(logging.StreamHandler):

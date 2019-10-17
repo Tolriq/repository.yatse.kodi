@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-import urllib
-
-import private.ydlfix
-import urlresolver
-import utils
+import lib.private.ydlfix
+import lib.utils as utils
 import xbmc
 import xbmcaddon
-from utils import logger
-from youtube_dl import YoutubeDL
+from lib.utils import logger
+from lib.youtube_dl import YoutubeDL
 
-private.ydlfix.patch_youtube_dl()
+lib.private.ydlfix.patch_youtube_dl()
+
+if utils.is_python_3():
+    from urllib.parse import unquote
+else:
+    from urllib import unquote
+    import urlresolver
 
 have_adaptive_plugin = '"enabled":true' in xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,"params":{"addonid":"inputstream.adaptive", "properties": ["enabled"]}}')
 
@@ -84,7 +87,7 @@ def resolve_with_youtube_dl(url, parameters, action):
 
 
 def handle_unresolved_url(data, action):
-    url = urllib.unquote(data)
+    url = unquote(data)
     logger.info(u'Trying to resolve URL (%s): %s' % (action, url))
     if xbmc.Player().isPlaying():
         utils.show_info_notification(utils.translation(32007), 1000)
@@ -108,12 +111,15 @@ def handle_unresolved_url(data, action):
         return
     logger.error(u'Url not resolved by YoutubeDL')
 
-    logger.info(u'Trying to resolve with urlResolver')
-    stream_url = urlresolver.HostedMediaFile(url=url).resolve()
-    if stream_url:
-        logger.info(u'Url resolved by urlResolver: %s' % stream_url)
-        utils.play_url(stream_url, action)
-        return
+    if utils.is_python_3():
+        logger.info(u'Skipping urlResolver as running on Python 3')
+    else:
+        logger.info(u'Trying to resolve with urlResolver')
+        stream_url = urlresolver.HostedMediaFile(url=url).resolve()
+        if stream_url:
+            logger.info(u'Url resolved by urlResolver: %s' % stream_url)
+            utils.play_url(stream_url, action)
+            return
 
     logger.info(u'Trying to play as basic url')
     utils.play_url(url, action)
