@@ -41,7 +41,6 @@ from ..utils import (
     orderedSet,
     parse_codecs,
     parse_duration,
-    qualities,
     remove_quotes,
     remove_start,
     smuggle_url,
@@ -384,19 +383,21 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                             (?:(?:www|no)\.)?invidiou\.sh/|
                             (?:(?:www|fi|de)\.)?invidious\.snopyta\.org/|
                             (?:www\.)?invidious\.kabi\.tk/|
-                            (?:www\.)?invidious\.enkirton\.net/|
                             (?:www\.)?invidious\.13ad\.de/|
                             (?:www\.)?invidious\.mastodon\.host/|
                             (?:www\.)?invidious\.nixnet\.xyz/|
+                            (?:www\.)?invidious\.drycat\.fr/|
                             (?:www\.)?tube\.poal\.co/|
                             (?:www\.)?vid\.wxzm\.sx/|
                             (?:www\.)?yt\.elukerio\.org/|
+                            (?:www\.)?yt\.lelux\.fi/|
                             (?:www\.)?kgg2m7yk5aybusll\.onion/|
                             (?:www\.)?qklhadlycap4cnod\.onion/|
                             (?:www\.)?axqzx4s6s54s32yentfqojs3x5i7faxza6xo3ehd4bzzsg2ii4fv2iid\.onion/|
                             (?:www\.)?c7hqkpkpemu6e7emz5b4vyz7idjgdvgaaa3dyimmeojqbgpea3xqjoid\.onion/|
                             (?:www\.)?fz253lmuao3strwbfbmx46yu7acac2jz27iwtorgmbqlkurlclmancad\.onion/|
                             (?:www\.)?invidious\.l4qlywnpwqsluw65ts7md3khrivpirse744un3x7mlskqauz5pyuzgqd\.onion/|
+                            (?:www\.)?owxfohz4kjyv25fvlqilyxast7inivgiktls3th44jhk3ej3i7ya\.b32\.i2p/|
                             youtube\.googleapis\.com/)                        # the various hostnames, with wildcard subdomains
                          (?:.*?\#/)?                                          # handle anchor (#/) redirect urls
                          (?:                                                  # the various things that can precede the ID:
@@ -1944,7 +1945,6 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                                 'width': int_or_none(width_height[0]),
                                 'height': int_or_none(width_height[1]),
                             }
-            q = qualities(['small', 'medium', 'hd720'])
             for fmt in streaming_formats:
                 itag = str_or_none(fmt.get('itag'))
                 if not itag:
@@ -1957,7 +1957,6 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                     'format_note': quality_label,
                     'fps': int_or_none(fmt.get('fps')),
                     'height': int_or_none(fmt.get('height')),
-                    'quality': q(quality),
                     # bitrate for itag 43 is always 2147483647
                     'tbr': float_or_none(fmt.get('averageBitrate') or fmt.get('bitrate'), 1000) if itag != '43' else None,
                     'width': int_or_none(fmt.get('width')),
@@ -2074,7 +2073,8 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 quality = url_data.get('quality', [None])[0] or fmt.get('quality')
                 quality_label = url_data.get('quality_label', [None])[0] or fmt.get('qualityLabel')
 
-                tbr = float_or_none(url_data.get('bitrate', [None])[0], 1000) or float_or_none(fmt.get('bitrate'), 1000)
+                tbr = (float_or_none(url_data.get('bitrate', [None])[0], 1000)
+                       or float_or_none(fmt.get('bitrate'), 1000)) if format_id != '43' else None
                 fps = int_or_none(url_data.get('fps', [None])[0]) or int_or_none(fmt.get('fps'))
 
                 more_fields = {
@@ -2084,7 +2084,6 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                     'height': height,
                     'fps': fps,
                     'format_note': quality_label or quality,
-                    'quality': q(quality),
                 }
                 for key, value in more_fields.items():
                     if value:
@@ -2743,7 +2742,7 @@ class YoutubePlaylistIE(YoutubePlaylistBaseInfoExtractor):
             page, 'title', default=None)
 
         _UPLOADER_BASE = r'class=["\']pl-header-details[^>]+>\s*<li>\s*<a[^>]+\bhref='
-        uploader = self._search_regex(
+        uploader = self._html_search_regex(
             r'%s["\']/(?:user|channel)/[^>]+>([^<]+)' % _UPLOADER_BASE,
             page, 'uploader', default=None)
         mobj = re.search(
