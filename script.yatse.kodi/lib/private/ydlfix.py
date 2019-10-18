@@ -84,4 +84,4 @@ def patch_youtube_dl():
         import _subprocess
     except ImportError:
         # noinspection PyProtectedMember
-        from subprocess import _subprocess
+        from lib.private.subprocess import _subprocess
