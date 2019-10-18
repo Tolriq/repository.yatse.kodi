@@ -36,7 +36,7 @@
     </extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.8.0" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.8.1" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver.yatse"/>
@@ -55,7 +55,7 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.8.0: Add support for Python 3 (Kodi 19 Windows Python 3 is broken and does not support ctypes, no workaround!)
+        <news>1.8.1: Add support for Python 3 (Kodi 19 Windows Python 3 is broken and does not support ctypes, no workaround!)
 1.7.0: Update YoutubeDL with Youtube fix
 1.6.6: Update YoutubeDL
 1.6.5: Update YoutubeDL
