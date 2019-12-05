@@ -13,33 +13,9 @@
 	</extension>
 </addon>
 
-<addon id="script.module.urlresolver.yatse" name="URLResolver" version="5.0.45" provider-name="tvaddons">
-    <requires>
-        <import addon="xbmc.python" version="2.1.0" />
-        <import addon="plugin.video.youtube" optional="true" />
-        <import addon="script.module.python.twitch" optional="true" />
-        <import addon="script.module.cryptopy" version="1.2.6" optional="true" />
-        <import addon="plugin.video.gdrive" optional="true" />
-    </requires>
-    <extension point="xbmc.python.module" library="lib" />
-    <extension point="xbmc.python.pluginsource" library="lib/default.py" />
-    <extension point="xbmc.addon.metadata">
-        <platform>all</platform>
-        <summary lang="en">Resolve common video host URL's to be playable in XBMC/Kodi.</summary>
-        <summary lang="es">Resolver enlaces a videos de sitios populares para poder reproducirlos en XBMC/Kodi.</summary>
-        <summary lang="hr">Prilagodi najčešće URL-ove video izvora kako bi radili u XBMC/Kodiju.</summary>
-        <summary lang="el">Επίλυση συνδέσμων κοινών εξυπηρετητών σε μορφή βίντεο ικανό για αναπαραγωγή στο XBMC/Kodi.</summary>
-        <description lang="en">Resolve common video host URL's to be playable in XBMC/Kodi, simplify addon development of video plugins requiring multi video hosts.</description>
-        <description lang="hr">Prilagodi najčešće URL-ove video izvora kako bi radili u XBMC/Kodiju, pojednostavnjuje razvoj priključaka za video dodatke koji zahtjevaju višestruke video izvore.</description>
-        <forum>https://www.tvaddons.co/forums</forum>
-        <website>https://www.tvaddons.co</website>
-    </extension>
-</addon>
-
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.8.3" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.9.0" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
-        <import addon="script.module.urlresolver.yatse"/>
         <import addon="plugin.video.youtube"/>
     </requires>
     <extension point="xbmc.python.script" library="default.py">
@@ -55,7 +31,8 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>1.8.3: Update YoutubeDL
+        <news>1.9.0: Remove support for UrlResolver
+1.8.3: Update YoutubeDL
 1.8.2: Update YoutubeDL
 1.8.1: Add support for Python 3 (Kodi 19 Windows Python 3 is broken and does not support ctypes, no workaround!)
 1.7.0: Update YoutubeDL with Youtube fix
