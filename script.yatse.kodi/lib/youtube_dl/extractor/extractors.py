@@ -21,6 +21,7 @@ from .acast import (
 from .adn import ADNIE
 from .adobeconnect import AdobeConnectIE
 from .adobetv import (
+    AdobeTVEmbedIE,
     AdobeTVIE,
     AdobeTVShowIE,
     AdobeTVChannelIE,
@@ -796,10 +797,6 @@ from .ooyala import (
     OoyalaIE,
     OoyalaExternalIE,
 )
-from .openload import (
-    OpenloadIE,
-    VerystreamIE,
-)
 from .ora import OraTVIE
 from .orf import (
     ORFTVthekIE,
@@ -1060,7 +1057,6 @@ from .srmediathek import SRMediathekIE
 from .stanfordoc import StanfordOpenClassroomIE
 from .steam import SteamIE
 from .streamable import StreamableIE
-from .streamango import StreamangoIE
 from .streamcloud import StreamcloudIE
 from .streamcz import StreamCZIE
 from .streetvoice import StreetVoiceIE
@@ -1172,6 +1168,7 @@ from .turbo import TurboIE
 from .tv2 import (
     TV2IE,
     TV2ArticleIE,
+    KatsomoIE,
 )
 from .tv2dk import TV2DKIE
 from .tv2hu import TV2HuIE
@@ -1237,7 +1234,10 @@ from .udemy import (
     UdemyCourseIE
 )
 from .udn import UDNEmbedIE
-from .ufctv import UFCTVIE
+from .ufctv import (
+    UFCTVIE,
+    UFCArabiaIE,
+)
 from .uktvplay import UKTVPlayIE
 from .digiteka import DigitekaIE
 from .dlive import (

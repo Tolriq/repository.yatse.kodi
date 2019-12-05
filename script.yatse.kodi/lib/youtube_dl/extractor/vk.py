@@ -216,8 +216,7 @@ class VKIE(VKBaseIE):
                 'id': 'k3lz2cmXyRuJQSjGHUv',
                 'ext': 'mp4',
                 'title': 'md5:d52606645c20b0ddbb21655adaa4f56f',
-                # TODO: fix test by fixing dailymotion description extraction
-                'description': 'md5:c651358f03c56f1150b555c26d90a0fd',
+                'description': 'md5:424b8e88cc873217f520e582ba28bb36',
                 'uploader': 'AniLibria.Tv',
                 'upload_date': '20160914',
                 'uploader_id': 'x1p5vl5',
@@ -634,14 +633,15 @@ class VKWallPostIE(VKBaseIE):
             if not a.url:
                 continue
             title = unescapeHTML(a.title)
+            performer = unescapeHTML(a.performer)
             entries.append({
                 'id': '%s_%s' % (a.owner_id, a.id),
                 'url': self._unmask_url(a.url, a.ads['vk_id']),
-                'title': '%s - %s' % (a.performer, title) if a.performer else title,
-                'thumbnail': a.cover_url.split(',') if a.cover_url else None,
-                'duration': a.duration,
+                'title': '%s - %s' % (performer, title) if performer else title,
+                'thumbnails': [{'url': c_url} for c_url in a.cover_url.split(',')] if a.cover_url else None,
+                'duration': int_or_none(a.duration),
                 'uploader': uploader,
-                'artist': a.performer,
+                'artist': performer,
                 'track': title,
                 'ext': 'mp4',
                 'protocol': 'm3u8',
