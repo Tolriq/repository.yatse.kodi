@@ -1,6 +1,6 @@
 """
-thevid.net urlresolver plugin
-Copyright (C) 2015 tknorris
+dailynotion UrlResolver plugin
+Copyright (C) 2019 gujal
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,11 +15,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
+
+from __generic_resolver__ import GenericResolver
 from lib import helpers
-from urlresolver import common
 
-logger = common.log_utils.Logger.get_logger(__name__)
-logger.disable()
+class DailyNotionResolver(GenericResolver):
+    name = "dailynotion.me"
+    domains = ['dailynotion.me']
+    pattern = r'(?://|\.)(dailynotion\.me)/player/([0-9a-zA-Z]+)'
 
-def get_media_url(url):
-    return helpers.get_media_url(url, patterns=['''var vld[a-zA-Z0-9]+=\s*["'](?P<url>//[^"']+\.(?:mp4|m3u8)\?[^"']+)'''], generic_patterns=False).replace(' ', '%20')
+    def get_media_url(self, host, media_id):
+        return helpers.get_media_url(self.get_url(host, media_id), patterns=[r'''"src":"(?P<url>[^"]+)","label":"(?P<label>[^"]+)'''])
+
+    def get_url(self, host, media_id):
+        return self._default_get_url(host, media_id, template='http://{host}/player/{media_id}/')

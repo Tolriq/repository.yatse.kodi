@@ -1,6 +1,6 @@
 """
-    Kodi urlresolver plugin
-    Copyright (C) 2019
+    plugin for UrlResolver
+    Copyright (C) 2019 gujal
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,26 +17,32 @@
 """
 import re
 from lib import helpers
+from lib import jsunpack
 from urlresolver import common
 from urlresolver.resolver import UrlResolver, ResolverError
 
-class OnlyStreamResolver(UrlResolver):
-    name = 'onlystream'
-    domains = ['onlystream.tv']
-    pattern = r'(?://|\.)(onlystream\.tv)/(?:e/)?([0-9a-zA-Z-_/]+)'
+class IDupResolver(UrlResolver):
+    name = "idup"
+    domains = ["idup.to"]
+    pattern = r'(?://|\.)(idup\.to)/video/([0-9a-zA-Z]+)'
 
     def __init__(self):
         self.net = common.Net()
 
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
-        headers = {'Referer':'onlystream.tv','User-Agent':common.RAND_UA}
+        headers = {'User-Agent': common.RAND_UA}
         html = self.net.http_GET(web_url, headers=headers).content
-        r = re.search('sources: .{file:"(.+?)"', html, re.DOTALL)
 
-        headers = {'Referer':'https://onlystream.tv/'+media_id,'User-Agent':common.RAND_UA}
-        if r:return r.group(1) + helpers.append_headers(headers)
-        else:raise ResolverError('Video cannot be located.')
+        r = re.search(r'JuicyCodes.Run\("([^)]+)"\)', html, re.DOTALL)
 
+        if r:
+            juice = r.group(1).replace('"+"', '').decode('base64')
+            jhtml = jsunpack.unpack(juice)
+            sources = helpers.scrape_sources(jhtml)
+            return helpers.pick_source(sources) + helpers.append_headers(headers)
+
+        raise ResolverError('File Not Found or removed')
+ 
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='https://{host}/e/{media_id}')
+        return self._default_get_url(host, media_id, template='https://{host}/video/{media_id}/')

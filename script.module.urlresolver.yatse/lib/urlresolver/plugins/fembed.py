@@ -23,8 +23,9 @@ from urlresolver.resolver import UrlResolver, ResolverError
 
 class FembedResolver(UrlResolver):
     name = "fembed"
-    domains = ["fembed.com", "24hd.club", "vcdn.io", "sharinglink.club", "votrefiles.club", "femoload.xyz", "dailyplanet.pw"]
-    pattern = r'(?://|\.)((?:fembed|24hd|vcdn|sharinglink|votrefiles|femoload|dailyplanet)\.(?:com|club|io|xyz|pw))/v/([a-zA-Z0-9-]+)'
+    domains = ["fembed.com", "24hd.club", "vcdn.io", "sharinglink.club", "votrefiles.club", "there.to",
+               "femoload.xyz", "dailyplanet.pw", "jplayer.net", "xstreamcdn.com", "gcloud.live", "vcdnplay.com"]
+    pattern = r'(?://|\.)((?:fembed|24hd|vcdn|sharinglink|votrefiles|femoload|dailyplanet|jplayer|there|gcloud|xstreamcdn|vcdnplay)\.(?:com|club|io|xyz|pw|net|to|live))/v/([a-zA-Z0-9-]+)'
 
     def __init__(self):
         self.net = common.Net()
@@ -32,7 +33,7 @@ class FembedResolver(UrlResolver):
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
         headers = {'Referer': web_url, 'User-Agent': common.RAND_UA}
-        api_url = 'https://www.%s/api/source/%s' % (host, media_id)
+        api_url = 'https://www.{0}/api/source/{1}'.format(host, media_id)
         js_result = self.net.http_POST(api_url, form_data={'r': ''}, headers=headers).content
         
         if js_result:
@@ -51,4 +52,4 @@ class FembedResolver(UrlResolver):
         raise ResolverError('Video not found')
 
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, 'https://www.{host}/v/{media_id}')
+        return self._default_get_url(host, media_id, 'https://{host}/v/{media_id}')
