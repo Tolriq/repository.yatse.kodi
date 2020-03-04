@@ -92,7 +92,7 @@ class Generator:
 # loop thru and add each addons addon.xml file
         for addon in addons:
             try:
-                if (not os.path.isdir(addon) or addon == "zips" or addon.startswith('.')): continue
+                if (not os.path.isdir(addon) or addon == "zips" or addon == "matrix" or addon.startswith('.')): continue
                 _path = os.path.join( addon, "addon.xml" )
                 xml_lines = open( _path, "r" ).read().splitlines()
                 addon_xml = ""

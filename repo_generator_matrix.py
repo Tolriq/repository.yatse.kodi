@@ -49,8 +49,7 @@ class Generator:
 
                 # Replace the target string
                 filedata = filedata.replace('addon="xbmc.python" version="2.1.0"', 'addon="xbmc.python" version="3.0.0"')
-                filedata = filedata.replace('name="Yatse Kodi helper script" version="', 'name="Yatse Kodi helper script" version="9')
-                print filedata
+                filedata = filedata.replace('name="Yatse Kodi helper script" version="', 'name="Yatse Matrix helper script" version="9')
 
                 # Write the file out again
                 with open(_path, 'w') as file:
@@ -72,7 +71,7 @@ class Generator:
 
                 # Replace the target string
                 filedata = filedata.replace('addon="xbmc.python" version="3.0.0"', 'addon="xbmc.python" version="2.1.0"')
-                filedata = filedata.replace('name="Yatse Kodi helper script" version="9', 'name="Yatse Kodi helper script" version="')
+                filedata = filedata.replace('name="Yatse Matrix helper script" version="9', 'name="Yatse Kodi helper script" version="')
                 # Write the file out again
                 with open(_path, 'w') as file:
                     file.write(filedata)
