@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="1.9.2" provider-name="Yatse">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="plugin.video.youtube"/>
+    </requires>
+    <extension point="xbmc.python.script" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Yatse helper script for Kodi</summary>
+        <summary lang="ru">Скрипт Yatse для Kodi</summary>
+        <summary lang="fr">Script Yatse helper pour Kodi</summary>
+        <summary lang="de">Yatse-Skript für Kodi</summary>
+        <description lang="en">Yatse helper script for Kodi</description>
+        <description lang="ru">Скрипт для помощи работы Yatse в Kodi</description>
+        <description lang="fr">Script Yatse helper pour Kodi</description>
+        <description lang="de">Yatse-Skript für Kodi</description>
+        <platform>all</platform>
+        <news>1.9.2: Update YoutubeDL
+1.9.1: Update YoutubeDL
+1.9.0: Remove support for UrlResolver
+1.8.3: Update YoutubeDL
+1.8.2: Update YoutubeDL
+1.8.1: Add support for Python 3 (Kodi 19 Windows Python 3 is broken and does not support ctypes, no workaround!)
+1.7.0: Update YoutubeDL with Youtube fix
+1.6.6: Update YoutubeDL
+1.6.5: Update YoutubeDL
+1.6.4: Update YoutubeDL		
+1.6.3: Update YoutubeDL
+1.6.2: Update YoutubeDL
+1.6.1: Fix queuing youtube video when using Dash.
+1.6.0: Embed youtubeDL for faster update than official addon + display notification instead of busy dialog for better Kodi 18 support.
+1.5.1: Use Youtube plugin when sharing if you activate MPEG-DASH to support 1080p+ quality. Add support for some more streams type. Remove no more needed Kodi 18 hack.
+1.4.6: Show script settings when trying to start from GUI.
+1.4.5: Ignore some regexp errors.
+1.4.4: Ignore errors on playlist containing invalid data.
+1.4.3: Fix issues on Kodi 16.
+1.4.2: Picture playlist support seems broken on Kodi 17.
+1.4.1: Improve picture support.
+1.4.0: Add support for pushing meta data when streaming from Yatse. (Except for videos containing ? on Kodi 18 due to a Kodi bug).
+        </news>
+    </extension>
+</addon>
