@@ -10,7 +10,7 @@
 			<datadir zip="true">https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/zips/</datadir>
 			<hashes>false</hashes>
 		</dir>
-		<dir minversion="18.10.0">
+		<dir minversion="18.9.0">
 			<info compressed="false">https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/matrix/addons.xml</info>
 			<checksum>https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/matrix/addons.xml.md5</checksum>
 			<datadir zip="true">https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/matrix/</datadir>
