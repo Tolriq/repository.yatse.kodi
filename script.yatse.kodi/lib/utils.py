@@ -165,6 +165,8 @@ def get_kodi_list_item(meta_data):
         item_info['title'] = meta_data['title']
     if 'thumbnail' in meta_data:
         list_item.setThumbnailImage(meta_data['thumbnail'])
+    if 'id' in meta_data:
+        list_item.setProperty('youtubeId', meta_data['id'])
     if 'duration' in meta_data:
         item_info['duration'] = meta_data['duration']
     if 'url' in meta_data:
