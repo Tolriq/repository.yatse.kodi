@@ -38,3 +38,7 @@ msgstr ""
 msgctxt "#32007"
 msgid "Resolving shared media."
 msgstr ""
+
+msgctxt "#32008"
+msgid "Prefer Kodi Youtube addon for Youtube urls"
+msgstr ""

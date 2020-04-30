@@ -95,8 +95,8 @@ def handle_unresolved_url(data, action):
     if 'youtube.com' in url or 'youtu.be' in url:
         youtube_addon = xbmcaddon.Addon(id="plugin.video.youtube")
         if youtube_addon:
-            if youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
-                logger.info(u'Youtube addon have DASH enabled use it')
+            if utils.get_setting('preferYoutubeAddon') == 'true' or youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
+                logger.info(u'Youtube addon have DASH enabled or is configured as preferred use it')
                 utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % url, action)
                 return
     logger.info(u'Trying to resolve with YoutubeDL')
