@@ -93,6 +93,9 @@ def play_url(url, action, meta_data=None, use_adaptive=False):
             list_item.setProperty('inputstreamaddon', 'inputstream.adaptive')
             list_item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
     if url:
+        if get_setting('skipSslVerification') == 'true' and url.startswith('https'):
+            url = '%s|verifypeer=false' % url
+
         if (action == 'play') or (not xbmc.Player().isPlaying()):
             logger.info(u'Playing url: %s' % url)
             # Clear both playlist but only fill video as mixed playlist will work and audio will correctly play

@@ -42,3 +42,11 @@ msgstr ""
 msgctxt "#32008"
 msgid "Prefer Kodi Youtube addon for Youtube urls"
 msgstr ""
+
+msgctxt "#32009"
+msgid "Network"
+msgstr ""
+
+msgctxt "#32010"
+msgid "Skip SSL verification"
+msgstr ""
