@@ -27,7 +27,7 @@
 	</extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="2.3.4" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="2.3.5" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="plugin.video.youtube"/>
