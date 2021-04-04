@@ -24,6 +24,7 @@ from ..jsinterp import JSInterpreter
 from ..utils import (
     ExtractorError,
     clean_html,
+    dict_get,
     float_or_none,
     int_or_none,
     mimetype2ext,
@@ -248,7 +249,23 @@ class YoutubeBaseInfoExtractor(InfoExtractor):
 
         return True
 
+    def _initialize_consent(self):
+        cookies = self._get_cookies('https://www.youtube.com/')
+        if cookies.get('__Secure-3PSID'):
+            return
+        consent_id = None
+        consent = cookies.get('CONSENT')
+        if consent:
+            if 'YES' in consent.value:
+                return
+            consent_id = self._search_regex(
+                r'PENDING\+(\d+)', consent.value, 'consent', default=None)
+        if not consent_id:
+            consent_id = random.randint(100, 999)
+        self._set_cookie('.youtube.com', 'CONSENT', 'YES+cb.20210328-17-p0.en+FX+%s' % consent_id)
+
     def _real_initialize(self):
+        self._initialize_consent()
         if self._downloader is None:
             return
         if not self._login():
@@ -312,7 +329,7 @@ class YoutubeBaseInfoExtractor(InfoExtractor):
             (lambda x: x['ownerText']['runs'][0]['text'],
              lambda x: x['shortBylineText']['runs'][0]['text']), compat_str)
         return {
-            '_type': 'url_transparent',
+            '_type': 'url',
             'ie_key': YoutubeIE.ie_key(),
             'id': video_id,
             'url': video_id,
@@ -1431,7 +1448,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
         base_url = self.http_scheme() + '//www.youtube.com/'
         webpage_url = base_url + 'watch?v=' + video_id
         webpage = self._download_webpage(
-            webpage_url + '&bpctr=9999999999', video_id, fatal=False)
+            webpage_url + '&bpctr=9999999999&has_verified=1', video_id, fatal=False)
 
         player_response = None
         if webpage:
@@ -1617,7 +1634,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                     f['format_id'] = itag
                 formats.append(f)
 
-        if self._downloader.params.get('youtube_include_dash_manifest'):
+        if self._downloader.params.get('youtube_include_dash_manifest', True):
             dash_manifest_url = streaming_data.get('dashManifestUrl')
             if dash_manifest_url:
                 for f in self._extract_mpd_formats(
@@ -1895,7 +1912,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                     info['channel'] = get_text(try_get(
                         vsir,
                         lambda x: x['owner']['videoOwnerRenderer']['title'],
-                        compat_str))
+                        dict))
                     rows = try_get(
                         vsir,
                         lambda x: x['metadataRowContainer']['metadataRowContainerRenderer']['rows'],
@@ -1942,7 +1959,7 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
                             invidio\.us
                         )/
                         (?:
-                            (?:channel|c|user|feed)/|
+                            (?:channel|c|user|feed|hashtag)/|
                             (?:playlist|watch)\?.*?\blist=|
                             (?!(?:watch|embed|v|e)\b)
                         )
@@ -2228,6 +2245,13 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
     }, {
         'url': 'https://www.youtube.com/TheYoungTurks/live',
         'only_matching': True,
+    }, {
+        'url': 'https://www.youtube.com/hashtag/cctv9',
+        'info_dict': {
+            'id': 'cctv9',
+            'title': '#cctv9',
+        },
+        'playlist_mincount': 350,
     }]
 
     @classmethod
@@ -2375,6 +2399,14 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
             for entry in self._post_thread_entries(renderer):
                 yield entry
 
+    def _rich_grid_entries(self, contents):
+        for content in contents:
+            video_renderer = try_get(content, lambda x: x['richItemRenderer']['content']['videoRenderer'], dict)
+            if video_renderer:
+                entry = self._video_entry(video_renderer)
+                if entry:
+                    yield entry
+
     @staticmethod
     def _build_continuation_query(continuation, ctp=None):
         query = {
@@ -2425,55 +2457,60 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
         if not tab_content:
             return
         slr_renderer = try_get(tab_content, lambda x: x['sectionListRenderer'], dict)
-        if not slr_renderer:
-            return
-        is_channels_tab = tab.get('title') == 'Channels'
-        continuation = None
-        slr_contents = try_get(slr_renderer, lambda x: x['contents'], list) or []
-        for slr_content in slr_contents:
-            if not isinstance(slr_content, dict):
-                continue
-            is_renderer = try_get(slr_content, lambda x: x['itemSectionRenderer'], dict)
-            if not is_renderer:
-                continue
-            isr_contents = try_get(is_renderer, lambda x: x['contents'], list) or []
-            for isr_content in isr_contents:
-                if not isinstance(isr_content, dict):
+        if slr_renderer:
+            is_channels_tab = tab.get('title') == 'Channels'
+            continuation = None
+            slr_contents = try_get(slr_renderer, lambda x: x['contents'], list) or []
+            for slr_content in slr_contents:
+                if not isinstance(slr_content, dict):
                     continue
-                renderer = isr_content.get('playlistVideoListRenderer')
-                if renderer:
-                    for entry in self._playlist_entries(renderer):
-                        yield entry
-                    continuation = self._extract_continuation(renderer)
+                is_renderer = try_get(slr_content, lambda x: x['itemSectionRenderer'], dict)
+                if not is_renderer:
                     continue
-                renderer = isr_content.get('gridRenderer')
-                if renderer:
-                    for entry in self._grid_entries(renderer):
-                        yield entry
-                    continuation = self._extract_continuation(renderer)
-                    continue
-                renderer = isr_content.get('shelfRenderer')
-                if renderer:
-                    for entry in self._shelf_entries(renderer, not is_channels_tab):
-                        yield entry
-                    continue
-                renderer = isr_content.get('backstagePostThreadRenderer')
-                if renderer:
-                    for entry in self._post_thread_entries(renderer):
-                        yield entry
-                    continuation = self._extract_continuation(renderer)
-                    continue
-                renderer = isr_content.get('videoRenderer')
-                if renderer:
-                    entry = self._video_entry(renderer)
-                    if entry:
-                        yield entry
+                isr_contents = try_get(is_renderer, lambda x: x['contents'], list) or []
+                for isr_content in isr_contents:
+                    if not isinstance(isr_content, dict):
+                        continue
+                    renderer = isr_content.get('playlistVideoListRenderer')
+                    if renderer:
+                        for entry in self._playlist_entries(renderer):
+                            yield entry
+                        continuation = self._extract_continuation(renderer)
+                        continue
+                    renderer = isr_content.get('gridRenderer')
+                    if renderer:
+                        for entry in self._grid_entries(renderer):
+                            yield entry
+                        continuation = self._extract_continuation(renderer)
+                        continue
+                    renderer = isr_content.get('shelfRenderer')
+                    if renderer:
+                        for entry in self._shelf_entries(renderer, not is_channels_tab):
+                            yield entry
+                        continue
+                    renderer = isr_content.get('backstagePostThreadRenderer')
+                    if renderer:
+                        for entry in self._post_thread_entries(renderer):
+                            yield entry
+                        continuation = self._extract_continuation(renderer)
+                        continue
+                    renderer = isr_content.get('videoRenderer')
+                    if renderer:
+                        entry = self._video_entry(renderer)
+                        if entry:
+                            yield entry
 
+                if not continuation:
+                    continuation = self._extract_continuation(is_renderer)
             if not continuation:
-                continuation = self._extract_continuation(is_renderer)
-
-        if not continuation:
-            continuation = self._extract_continuation(slr_renderer)
+                continuation = self._extract_continuation(slr_renderer)
+        else:
+            rich_grid_renderer = tab_content.get('richGridRenderer')
+            if not rich_grid_renderer:
+                return
+            for entry in self._rich_grid_entries(rich_grid_renderer.get('contents') or []):
+                yield entry
+            continuation = self._extract_continuation(rich_grid_renderer)
 
         headers = {
             'x-youtube-client-name': '1',
@@ -2541,13 +2578,14 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
                     continuation = self._extract_continuation(continuation_renderer)
                     continue
 
+            on_response_received = dict_get(response, ('onResponseReceivedActions', 'onResponseReceivedEndpoints'))
             continuation_items = try_get(
-                response, lambda x: x['onResponseReceivedActions'][0]['appendContinuationItemsAction']['continuationItems'], list)
+                on_response_received, lambda x: x[0]['appendContinuationItemsAction']['continuationItems'], list)
             if continuation_items:
                 continuation_item = continuation_items[0]
                 if not isinstance(continuation_item, dict):
                     continue
-                renderer = continuation_item.get('gridVideoRenderer')
+                renderer = self._extract_grid_item_renderer(continuation_item)
                 if renderer:
                     grid_renderer = {'items': continuation_items}
                     for entry in self._grid_entries(grid_renderer):
@@ -2560,6 +2598,19 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
                     for entry in self._playlist_entries(video_list_renderer):
                         yield entry
                     continuation = self._extract_continuation(video_list_renderer)
+                    continue
+                renderer = continuation_item.get('backstagePostThreadRenderer')
+                if renderer:
+                    continuation_renderer = {'contents': continuation_items}
+                    for entry in self._post_thread_continuation_entries(continuation_renderer):
+                        yield entry
+                    continuation = self._extract_continuation(continuation_renderer)
+                    continue
+                renderer = continuation_item.get('richItemRenderer')
+                if renderer:
+                    for entry in self._rich_grid_entries(continuation_items):
+                        yield entry
+                    continuation = self._extract_continuation({'contents': continuation_items})
                     continue
 
             break
@@ -2617,7 +2668,8 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
         selected_tab = self._extract_selected_tab(tabs)
         renderer = try_get(
             data, lambda x: x['metadata']['channelMetadataRenderer'], dict)
-        playlist_id = title = description = None
+        playlist_id = item_id
+        title = description = None
         if renderer:
             channel_title = renderer.get('title') or item_id
             tab_title = selected_tab.get('title')
@@ -2626,12 +2678,16 @@ class YoutubeTabIE(YoutubeBaseInfoExtractor):
                 title += ' - %s' % tab_title
             description = renderer.get('description')
             playlist_id = renderer.get('externalId')
-        renderer = try_get(
-            data, lambda x: x['metadata']['playlistMetadataRenderer'], dict)
-        if renderer:
-            title = renderer.get('title')
-            description = None
-            playlist_id = item_id
+        else:
+            renderer = try_get(
+                data, lambda x: x['metadata']['playlistMetadataRenderer'], dict)
+            if renderer:
+                title = renderer.get('title')
+            else:
+                renderer = try_get(
+                    data, lambda x: x['header']['hashtagHeaderRenderer'], dict)
+                if renderer:
+                    title = try_get(renderer, lambda x: x['hashtag']['simpleText'])
         playlist = self.playlist_result(
             self._entries(selected_tab, identity_token),
             playlist_id=playlist_id, playlist_title=title,

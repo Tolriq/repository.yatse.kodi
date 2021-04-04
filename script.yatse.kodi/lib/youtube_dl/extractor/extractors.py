@@ -72,6 +72,7 @@ from .arte import (
     ArteTVEmbedIE,
     ArteTVPlaylistIE,
 )
+from .arnes import ArnesIE
 from .asiancrush import (
     AsianCrushIE,
     AsianCrushPlaylistIE,
@@ -95,7 +96,8 @@ from .bandcamp import BandcampIE, BandcampAlbumIE, BandcampWeeklyIE
 from .bbc import (
     BBCCoUkIE,
     BBCCoUkArticleIE,
-    BBCCoUkIPlayerPlaylistIE,
+    BBCCoUkIPlayerEpisodesIE,
+    BBCCoUkIPlayerGroupIE,
     BBCCoUkPlaylistIE,
     BBCIE,
 )
@@ -877,6 +879,11 @@ from .packtpub import (
     PacktPubIE,
     PacktPubCourseIE,
 )
+from .palcomp3 import (
+    PalcoMP3IE,
+    PalcoMP3ArtistIE,
+    PalcoMP3VideoIE,
+)
 from .pandoratv import PandoraTVIE
 from .parliamentliveuk import ParliamentLiveUKIE
 from .patreon import PatreonIE
@@ -1624,5 +1631,9 @@ from .zattoo import (
 )
 from .zdf import ZDFIE, ZDFChannelIE
 from .zhihu import ZhihuIE
-from .zingmp3 import ZingMp3IE
+from .zingmp3 import (
+    ZingMp3IE,
+    ZingMp3AlbumIE,
+)
+from .zoom import ZoomIE
 from .zype import ZypeIE
