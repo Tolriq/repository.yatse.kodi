@@ -53,7 +53,7 @@ def get_setting(key):
 
 def call_plugin(plugin):
     logger.info(u'Calling plugin: %s' % plugin)
-    xbmc.executebuiltin('XBMC.RunPlugin(%s)' % plugin)
+    xbmc.executebuiltin('RunPlugin(%s)' % plugin)
 
 
 def translation(id_value):
