@@ -17,7 +17,9 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>2.3.X: Update YoutubeDL
+        <news>2.4.X: Update YoutubeDL
+2.4.0: Fix for Kodi 19 magnet sharing
+2.3.X: Update YoutubeDL
 2.3.0: Update YoutubeDL + New option to ignore wrong SSL certificates on Kodi 18+ (Thanks bsdf)
 2.2.0: Update YoutubeDL + Fix for Kodi 19 removed function
 2.1.1: Update YoutubeDL
