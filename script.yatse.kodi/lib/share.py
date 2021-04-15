@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import lib.private.ydlfix
 import lib.utils as utils
+import re
 import xbmc
 import xbmcaddon
 from lib.utils import logger
@@ -9,9 +10,9 @@ from lib.youtube_dl import YoutubeDL
 lib.private.ydlfix.patch_youtube_dl()
 
 if utils.is_python_3():
-    from urllib.parse import unquote
+    from urllib.parse import unquote, urlparse, urlunparse
 else:
-    from urllib import unquote
+    from urllib import unquote, urlparse, urlunparse
 
 have_adaptive_plugin = '"enabled":true' in xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,"params":{"addonid":"inputstream.adaptive", "properties": ["enabled"]}}')
 
@@ -97,6 +98,10 @@ def handle_unresolved_url(data, action):
         if youtube_addon:
             if utils.get_setting('preferYoutubeAddon') == 'true' or youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
                 logger.info(u'Youtube addon have DASH enabled or is configured as preferred use it')
+                clean_url = list(urlparse(url))
+                clean_url[4] = '&'.join(
+                    [x for x in clean_url[4].split('&') if not re.match(r'app=', x)])
+                url = urlunparse(clean_url)
                 utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % url, action)
                 return
     logger.info(u'Trying to resolve with YoutubeDL')
