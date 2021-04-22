@@ -97,7 +97,7 @@ def handle_unresolved_url(data, action):
         if youtube_addon:
             if utils.get_setting('preferYoutubeAddon') == 'true' or youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
                 logger.info(u'Youtube addon have DASH enabled or is configured as preferred use it')
-                utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % url, action)
+                utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % data, action)
                 return
     logger.info(u'Trying to resolve with YoutubeDL')
     result = resolve_with_youtube_dl(url, {'format': 'best', 'no_color': 'true', 'ignoreerrors': 'true'}, action)
