@@ -12,7 +12,7 @@ Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/archive/master.zip" -Ou
 
 unzip "$PSScriptRoot\.temp\ydl.zip" "$PSScriptRoot\.temp"
 
-Copy-Item -Force -recurse "$PSScriptRoot\.temp\yt-dlp-master\yt_dlp" -Destination "$PSScriptRoot\script.yatse.kodi\lib"
+Copy-Item -Force -recurse "$PSScriptRoot\.temp\yt-dlp-master\yt_dlp\*.*" -Destination "$PSScriptRoot\script.yatse.kodi\lib\youtube_dl\"
 
 $file = "version.txt"
 $fileVersion = (Get-Content $file | Select -First 1).Split(".")
