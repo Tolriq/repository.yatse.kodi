@@ -27,7 +27,7 @@
 	</extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Matrix helper script" version="92.4.5" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Matrix helper script" version="92.5.0" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="plugin.video.youtube"/>
@@ -45,7 +45,9 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>2.4.X: Update YoutubeDL
+        <news>2.5.X: Update Yt-dlp
+2.5.0: Switch to Yt-dlp (YoutubeDL replacement)
+2.4.X: Update YoutubeDL
 2.4.0: Fix for Kodi 19 magnet sharing
 2.3.X: Update YoutubeDL
 2.3.0: Update YoutubeDL + New option to ignore wrong SSL certificates on Kodi 18+ (Thanks bsdf)
