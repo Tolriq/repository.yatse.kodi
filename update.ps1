@@ -8,11 +8,11 @@ function Unzip
 
 Remove-Item .temp\* -Recurse -Force
 	
-Invoke-WebRequest -Uri "https://github.com/ytdl-org/youtube-dl/archive/master.zip" -OutFile ".temp\ydl.zip"
+Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/archive/master.zip" -OutFile ".temp\ydl.zip"
 
 unzip "$PSScriptRoot\.temp\ydl.zip" "$PSScriptRoot\.temp"
 
-Copy-Item -Force -recurse "$PSScriptRoot\.temp\youtube-dl-master\youtube_dl" -Destination "$PSScriptRoot\script.yatse.kodi\lib"
+Copy-Item -Force -recurse "$PSScriptRoot\.temp\yt-dlp-master\yt_dlp" -Destination "$PSScriptRoot\script.yatse.kodi\lib"
 
 $file = "version.txt"
 $fileVersion = (Get-Content $file | Select -First 1).Split(".")
