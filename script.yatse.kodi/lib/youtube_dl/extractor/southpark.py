@@ -56,39 +56,61 @@ class SouthParkEsIE(SouthParkIE):
 
 class SouthParkDeIE(SouthParkIE):
     IE_NAME = 'southpark.de'
-    _VALID_URL = r'https?://(?:www\.)?(?P<url>southpark\.de/(?:clips|alle-episoden|collections)/(?P<id>.+?)(\?|#|$))'
-    _FEED_URL = 'http://www.southpark.de/feeds/video-player/mrss/'
-
+    _VALID_URL = r'https?://(?:www\.)?(?P<url>southpark\.de/(?:(en/(videoclip|collections|episodes|video-clips))|(videoclip|collections|folgen))/(?P<id>(?P<unique_id>.+?)/.+?)(?:\?|#|$))'
     _TESTS = [{
-        'url': 'http://www.southpark.de/clips/uygssh/the-government-wont-respect-my-privacy#tab=featured',
-        'info_dict': {
-            'id': '85487c96-b3b9-4e39-9127-ad88583d9bf2',
-            'ext': 'mp4',
-            'title': 'South Park|The Government Won\'t Respect My Privacy',
-            'description': 'Cartman explains the benefits of "Shitter" to Stan, Kyle and Craig.',
-            'timestamp': 1380160800,
-            'upload_date': '20130926',
-        },
-    }, {
-        # non-ASCII characters in initial URL
-        'url': 'http://www.southpark.de/alle-episoden/s18e09-hashtag-aufwärmen',
-        'info_dict': {
-            'title': 'Hashtag „Aufwärmen“',
-            'description': 'Kyle will mit seinem kleinen Bruder Ike Videospiele spielen. Als der nicht mehr mit ihm spielen will, hat Kyle Angst, dass er die Kids von heute nicht mehr versteht.',
-        },
-        'playlist_count': 3,
-    }, {
-        # non-ASCII characters in redirect URL
-        'url': 'http://www.southpark.de/alle-episoden/s18e09',
-        'info_dict': {
-            'title': 'Hashtag „Aufwärmen“',
-            'description': 'Kyle will mit seinem kleinen Bruder Ike Videospiele spielen. Als der nicht mehr mit ihm spielen will, hat Kyle Angst, dass er die Kids von heute nicht mehr versteht.',
-        },
-        'playlist_count': 3,
-    }, {
-        'url': 'http://www.southpark.de/collections/2476/superhero-showdown/1',
+        'url': 'https://www.southpark.de/videoclip/rsribv/south-park-rueckzug-zum-gummibonbon-wald',
         'only_matching': True,
+    }, {
+        'url': 'https://www.southpark.de/folgen/jiru42/south-park-verkabelung-staffel-23-ep-9',
+        'only_matching': True,
+    }, {
+        'url': 'https://www.southpark.de/collections/zzno5a/south-park-good-eats/7q26gp',
+        'only_matching': True,
+    }, {
+        # clip
+        'url': 'https://www.southpark.de/en/video-clips/ct46op/south-park-tooth-fairy-cartman',
+        'info_dict': {
+            'id': 'e99d45ea-ed00-11e0-aca6-0026b9414f30',
+            'ext': 'mp4',
+            'title': 'Tooth Fairy Cartman',
+            'description': 'md5:db02e23818b4dc9cb5f0c5a7e8833a68',
+        },
+    }, {
+        # episode
+        'url': 'https://www.southpark.de/en/episodes/yy0vjs/south-park-the-pandemic-special-season-24-ep-1',
+        'info_dict': {
+            'id': 'f5fbd823-04bc-11eb-9b1b-0e40cf2fc285',
+            'ext': 'mp4',
+            'title': 'South Park',
+            'description': 'md5:ae0d875eff169dcbed16b21531857ac1',
+        },
+    }, {
+        # clip
+        'url': 'https://www.southpark.de/videoclip/ct46op/south-park-zahnfee-cartman',
+        'info_dict': {
+            'id': 'e99d45ea-ed00-11e0-aca6-0026b9414f30',
+            'ext': 'mp4',
+            'title': 'Zahnfee Cartman',
+            'description': 'md5:b917eec991d388811d911fd1377671ac'
+        },
+    }, {
+        # episode
+        'url': 'https://www.southpark.de/folgen/242csn/south-park-her-mit-dem-hirn-staffel-1-ep-7',
+        'info_dict': {
+            'id': '607115f3-496f-40c3-8647-2b0bcff486c0',
+            'ext': 'mp4',
+            'title': 'md5:South Park | Pink Eye | E 0107 | HDSS0107X deu | Version: 634312 | Comedy Central S1',
+        },
     }]
+
+    def _get_feed_url(self, uri, url=None):
+        video_id = self._id_from_uri(uri)
+        config = self._download_json(
+            'http://media.mtvnservices.com/pmt/e1/access/index.html?uri=%s&configtype=edge&ref=%s' % (uri, url), video_id)
+        return self._remove_template_parameter(config['feedWithQueryParams'])
+
+    def _get_feed_query(self, uri):
+        return
 
 
 class SouthParkNlIE(SouthParkIE):

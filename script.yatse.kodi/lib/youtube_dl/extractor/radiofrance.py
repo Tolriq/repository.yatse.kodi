@@ -23,7 +23,7 @@ class RadioFranceIE(InfoExtractor):
     }
 
     def _real_extract(self, url):
-        m = re.match(self._VALID_URL, url)
+        m = self._match_valid_url(url)
         video_id = m.group('id')
 
         webpage = self._download_webpage(url, video_id)
@@ -43,7 +43,7 @@ class RadioFranceIE(InfoExtractor):
                 'format_id': fm[0],
                 'url': fm[1],
                 'vcodec': 'none',
-                'preference': i,
+                'quality': i,
             }
             for i, fm in
             enumerate(re.findall(r"([a-z0-9]+)\s*:\s*'([^']+)'", formats_str))

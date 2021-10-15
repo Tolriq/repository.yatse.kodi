@@ -98,6 +98,9 @@ class ORFTVthekIE(InfoExtractor):
                 elif ext == 'f4m':
                     formats.extend(self._extract_f4m_formats(
                         src, video_id, f4m_id=format_id, fatal=False))
+                elif ext == 'mpd':
+                    formats.extend(self._extract_mpd_formats(
+                        src, video_id, mpd_id=format_id, fatal=False))
                 else:
                     formats.append({
                         'format_id': format_id,
@@ -180,7 +183,7 @@ class ORFTVthekIE(InfoExtractor):
 
 class ORFRadioIE(InfoExtractor):
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         show_date = mobj.group('date')
         show_id = mobj.group('show')
 

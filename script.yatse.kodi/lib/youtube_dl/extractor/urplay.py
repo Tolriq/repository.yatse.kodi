@@ -56,13 +56,12 @@ class URPlayIE(InfoExtractor):
             webpage, 'urplayer data'), video_id)['accessibleEpisodes']
         urplayer_data = next(e for e in accessible_episodes if e.get('id') == vid)
         episode = urplayer_data['title']
-        raw_streaming_info = urplayer_data['streamingInfo']['raw']
-        host = self._download_json(
-            'http://streaming-loadbalancer.ur.se/loadbalancer.json',
-            video_id)['redirect']
 
+        host = self._download_json('http://streaming-loadbalancer.ur.se/loadbalancer.json', video_id)['redirect']
         formats = []
-        for k, v in raw_streaming_info.items():
+        urplayer_streams = urplayer_data.get('streamingInfo', {})
+
+        for k, v in urplayer_streams.get('raw', {}).items():
             if not (k in ('sd', 'hd') and isinstance(v, dict)):
                 continue
             file_http = v.get('location')
@@ -71,6 +70,13 @@ class URPlayIE(InfoExtractor):
                     'http://%s/%splaylist.m3u8' % (host, file_http),
                     video_id, skip_protocols=['f4m', 'rtmp', 'rtsp']))
         self._sort_formats(formats)
+
+        subtitles = {}
+        subs = urplayer_streams.get("sweComplete", {}).get("tt", {}).get("location")
+        if subs:
+            subtitles.setdefault('Svenska', []).append({
+                'url': subs,
+            })
 
         image = urplayer_data.get('image') or {}
         thumbnails = []
@@ -92,6 +98,7 @@ class URPlayIE(InfoExtractor):
 
         return {
             'id': video_id,
+            'subtitles': subtitles,
             'title': '%s : %s' % (series_title, episode) if series_title else episode,
             'description': urplayer_data.get('description'),
             'thumbnails': thumbnails,

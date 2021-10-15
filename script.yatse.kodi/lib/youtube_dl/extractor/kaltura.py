@@ -229,7 +229,7 @@ class KalturaIE(InfoExtractor):
     def _real_extract(self, url):
         url, smuggled_data = unsmuggle_url(url, {})
 
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         partner_id, entry_id = mobj.group('partner_id', 'id')
         ks = None
         captions = None
@@ -309,7 +309,7 @@ class KalturaIE(InfoExtractor):
             if f.get('fileExt') == 'chun':
                 continue
             # DRM-protected video, cannot be decrypted
-            if f.get('fileExt') == 'wvm':
+            if not self.get_param('allow_unplayable_formats') and f.get('fileExt') == 'wvm':
                 continue
             if not f.get('fileExt'):
                 # QT indicates QuickTime; some videos have broken fileExt

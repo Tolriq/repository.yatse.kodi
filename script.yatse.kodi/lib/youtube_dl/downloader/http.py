@@ -18,6 +18,7 @@ from ..utils import (
     int_or_none,
     sanitize_open,
     sanitized_Request,
+    ThrottledDownload,
     write_xattr,
     XAttrMetadataError,
     XAttrUnavailableError,
@@ -27,6 +28,7 @@ from ..utils import (
 class HttpFD(FileDownloader):
     def real_download(self, filename, info_dict):
         url = info_dict['url']
+        request_data = info_dict.get('request_data', None)
 
         class DownloadContext(dict):
             __getattr__ = dict.get
@@ -46,8 +48,9 @@ class HttpFD(FileDownloader):
 
         is_test = self.params.get('test', False)
         chunk_size = self._TEST_FILE_SIZE if is_test else (
-            info_dict.get('downloader_options', {}).get('http_chunk_size')
-            or self.params.get('http_chunk_size') or 0)
+            self.params.get('http_chunk_size')
+            or info_dict.get('downloader_options', {}).get('http_chunk_size')
+            or 0)
 
         ctx.open_mode = 'wb'
         ctx.resume_len = 0
@@ -55,6 +58,7 @@ class HttpFD(FileDownloader):
         ctx.block_size = self.params.get('buffersize', 1024)
         ctx.start_time = time.time()
         ctx.chunk_size = None
+        throttle_start = None
 
         if self.params.get('continuedl', True):
             # Establish possible resume length
@@ -101,7 +105,7 @@ class HttpFD(FileDownloader):
                 range_end = ctx.data_len - 1
             has_range = range_start is not None
             ctx.has_range = has_range
-            request = sanitized_Request(url, None, headers)
+            request = sanitized_Request(url, request_data, headers)
             if has_range:
                 set_range(request, range_start, range_end)
             # Establish connection
@@ -152,7 +156,7 @@ class HttpFD(FileDownloader):
                     try:
                         # Open the connection again without the range header
                         ctx.data = self.ydl.urlopen(
-                            sanitized_Request(url, None, headers))
+                            sanitized_Request(url, request_data, headers))
                         content_length = ctx.data.info()['Content-Length']
                     except (compat_urllib_error.HTTPError, ) as err:
                         if err.code < 500 or err.code >= 600:
@@ -175,7 +179,7 @@ class HttpFD(FileDownloader):
                                 'status': 'finished',
                                 'downloaded_bytes': ctx.resume_len,
                                 'total_bytes': ctx.resume_len,
-                            })
+                            }, info_dict)
                             raise SucceedDownload()
                         else:
                             # The length does not match, we start the download over
@@ -194,6 +198,7 @@ class HttpFD(FileDownloader):
                 raise RetryDownload(err)
 
         def download():
+            nonlocal throttle_start
             data_len = ctx.data.info().get('Content-length', None)
 
             # Range HTTP header may be ignored/unsupported by a webserver
@@ -235,7 +240,7 @@ class HttpFD(FileDownloader):
             while True:
                 try:
                     # Download and write
-                    data_block = ctx.data.read(block_size if data_len is None else min(block_size, data_len - byte_counter))
+                    data_block = ctx.data.read(block_size if not is_test else min(block_size, data_len - byte_counter))
                 # socket.timeout is a subclass of socket.error but may not have
                 # errno set
                 except socket.timeout as e:
@@ -307,10 +312,23 @@ class HttpFD(FileDownloader):
                     'eta': eta,
                     'speed': speed,
                     'elapsed': now - ctx.start_time,
-                })
+                    'ctx_id': info_dict.get('ctx_id'),
+                }, info_dict)
 
                 if data_len is not None and byte_counter == data_len:
                     break
+
+                if speed and speed < (self.params.get('throttledratelimit') or 0):
+                    # The speed must stay below the limit for 3 seconds
+                    # This prevents raising error when the speed temporarily goes down
+                    if throttle_start is None:
+                        throttle_start = now
+                    elif now - throttle_start > 3:
+                        if ctx.stream is not None and ctx.tmpfilename != '-':
+                            ctx.stream.close()
+                        raise ThrottledDownload()
+                elif speed:
+                    throttle_start = None
 
             if not is_test and ctx.chunk_size and ctx.data_len is not None and byte_counter < ctx.data_len:
                 ctx.resume_len = byte_counter
@@ -342,7 +360,8 @@ class HttpFD(FileDownloader):
                 'filename': ctx.filename,
                 'status': 'finished',
                 'elapsed': time.time() - ctx.start_time,
-            })
+                'ctx_id': info_dict.get('ctx_id'),
+            }, info_dict)
 
             return True
 
@@ -354,6 +373,8 @@ class HttpFD(FileDownloader):
                 count += 1
                 if count <= retries:
                     self.report_retry(e.source_error, count, retries)
+                else:
+                    self.to_screen(f'[download] Got server HTTP error: {e.source_error}')
                 continue
             except NextFragment:
                 continue

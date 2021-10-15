@@ -5,7 +5,7 @@ from .nbc import NBCIE
 
 
 class USANetworkIE(NBCIE):
-    _VALID_URL = r'https?(?P<permalink>://(?:www\.)?usanetwork\.com/[^/]+/video/[^/]+/(?P<id>\d+))'
+    _VALID_URL = r'https?(?P<permalink>://(?:www\.)?usanetwork\.com/(?:[^/]+/videos?|movies?)/(?:[^/]+/)?(?P<id>\d+))'
     _TESTS = [{
         'url': 'https://www.usanetwork.com/peacock-trailers/video/intelligence-trailer/4185302',
         'info_dict': {

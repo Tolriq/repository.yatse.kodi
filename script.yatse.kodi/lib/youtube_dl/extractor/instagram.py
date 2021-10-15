@@ -19,6 +19,7 @@ from ..utils import (
     std_headers,
     try_get,
     url_or_none,
+    variadic,
 )
 
 
@@ -140,11 +141,13 @@ class InstagramIE(InfoExtractor):
             return mobj.group('link')
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         video_id = mobj.group('id')
         url = mobj.group('url')
 
-        webpage = self._download_webpage(url, video_id)
+        webpage, urlh = self._download_webpage_handle(url, video_id)
+        if 'www.instagram.com/accounts/login' in urlh.geturl().rstrip('/'):
+            self.raise_login_required('You need to log in to access this content', method='cookies')
 
         (media, video_url, description, thumbnail, timestamp, uploader,
          uploader_id, like_count, comment_count, comments, height,
@@ -188,26 +191,29 @@ class InstagramIE(InfoExtractor):
             uploader_id = media.get('owner', {}).get('username')
 
             def get_count(keys, kind):
-                if not isinstance(keys, (list, tuple)):
-                    keys = [keys]
-                for key in keys:
+                for key in variadic(keys):
                     count = int_or_none(try_get(
                         media, (lambda x: x['edge_media_%s' % key]['count'],
                                 lambda x: x['%ss' % kind]['count'])))
                     if count is not None:
                         return count
+
             like_count = get_count('preview_like', 'like')
             comment_count = get_count(
                 ('preview_comment', 'to_comment', 'to_parent_comment'), 'comment')
 
-            comments = [{
-                'author': comment.get('user', {}).get('username'),
-                'author_id': comment.get('user', {}).get('id'),
-                'id': comment.get('id'),
-                'text': comment.get('text'),
-                'timestamp': int_or_none(comment.get('created_at')),
-            } for comment in media.get(
-                'comments', {}).get('nodes', []) if comment.get('text')]
+            comments = []
+            for comment in try_get(media, lambda x: x['edge_media_to_parent_comment']['edges']):
+                comment_dict = comment.get('node', {})
+                comment_text = comment_dict.get('text')
+                if comment_text:
+                    comments.append({
+                        'author': try_get(comment_dict, lambda x: x['owner']['username']),
+                        'author_id': try_get(comment_dict, lambda x: x['owner']['id']),
+                        'id': comment_dict.get('id'),
+                        'text': comment_text,
+                        'timestamp': int_or_none(comment_dict.get('created_at')),
+                    })
             if not video_url:
                 edges = try_get(
                     media, lambda x: x['edge_sidecar_to_children']['edges'],
@@ -273,6 +279,9 @@ class InstagramIE(InfoExtractor):
             'like_count': like_count,
             'comment_count': comment_count,
             'comments': comments,
+            'http_headers': {
+                'Referer': 'https://www.instagram.com/',
+            }
         }
 
 

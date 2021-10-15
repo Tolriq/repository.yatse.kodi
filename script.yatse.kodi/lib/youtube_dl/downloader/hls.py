@@ -1,36 +1,37 @@
 from __future__ import unicode_literals
 
 import re
+import io
 import binascii
-try:
-    from Crypto.Cipher import AES
-    can_decrypt_frag = True
-except ImportError:
-    can_decrypt_frag = False
 
+from ..downloader import get_suitable_downloader
 from .fragment import FragmentFD
 from .external import FFmpegFD
 
 from ..compat import (
-    compat_urllib_error,
+    compat_pycrypto_AES,
     compat_urlparse,
-    compat_struct_pack,
 )
 from ..utils import (
     parse_m3u8_attributes,
     update_url_query,
+    bug_reports_message,
 )
+from .. import webvtt
 
 
 class HlsFD(FragmentFD):
-    """ A limited implementation that does not require ffmpeg """
+    """
+    Download segments in a m3u8 manifest. External downloaders can take over
+    the fragment downloads by supporting the 'm3u8_frag_urls' protocol and
+    re-defining 'supports_manifest' function
+    """
 
     FD_NAME = 'hlsnative'
 
     @staticmethod
-    def can_download(manifest, info_dict):
-        UNSUPPORTED_FEATURES = (
-            r'#EXT-X-KEY:METHOD=(?!NONE|AES-128)',  # encrypted streams [1]
+    def can_download(manifest, info_dict, allow_unplayable_formats=False):
+        UNSUPPORTED_FEATURES = [
             # r'#EXT-X-BYTERANGE',  # playlists composed of byte ranges of media files [2]
 
             # Live streams heuristic does not always work (e.g. geo restricted to Germany
@@ -42,20 +43,23 @@ class HlsFD(FragmentFD):
             # no segments will definitely be appended to the end of the playlist.
             # r'#EXT-X-PLAYLIST-TYPE:EVENT',  # media segments may be appended to the end of
             #                                 # event media playlists [4]
-            r'#EXT-X-MAP:',  # media initialization [5]
-
+            # r'#EXT-X-MAP:',  # media initialization [5]
             # 1. https://tools.ietf.org/html/draft-pantos-http-live-streaming-17#section-4.3.2.4
             # 2. https://tools.ietf.org/html/draft-pantos-http-live-streaming-17#section-4.3.2.2
             # 3. https://tools.ietf.org/html/draft-pantos-http-live-streaming-17#section-4.3.3.2
             # 4. https://tools.ietf.org/html/draft-pantos-http-live-streaming-17#section-4.3.3.5
             # 5. https://tools.ietf.org/html/draft-pantos-http-live-streaming-17#section-4.3.2.5
-        )
-        check_results = [not re.search(feature, manifest) for feature in UNSUPPORTED_FEATURES]
-        is_aes128_enc = '#EXT-X-KEY:METHOD=AES-128' in manifest
-        check_results.append(can_decrypt_frag or not is_aes128_enc)
-        check_results.append(not (is_aes128_enc and r'#EXT-X-BYTERANGE' in manifest))
-        check_results.append(not info_dict.get('is_live'))
-        return all(check_results)
+        ]
+        if not allow_unplayable_formats:
+            UNSUPPORTED_FEATURES += [
+                r'#EXT-X-KEY:METHOD=(?!NONE|AES-128)',  # encrypted streams [1]
+            ]
+
+        def check_results():
+            yield not info_dict.get('is_live')
+            for feature in UNSUPPORTED_FEATURES:
+                yield not re.search(feature, manifest)
+        return all(check_results())
 
     def real_download(self, filename, info_dict):
         man_url = info_dict['url']
@@ -65,17 +69,32 @@ class HlsFD(FragmentFD):
         man_url = urlh.geturl()
         s = urlh.read().decode('utf-8', 'ignore')
 
-        if not self.can_download(s, info_dict):
-            if info_dict.get('extra_param_to_segment_url') or info_dict.get('_decryption_key_url'):
-                self.report_error('pycrypto not found. Please install it.')
-                return False
-            self.report_warning(
-                'hlsnative has detected features it does not support, '
-                'extraction will be delegated to ffmpeg')
+        can_download, message = self.can_download(s, info_dict, self.params.get('allow_unplayable_formats')), None
+        if can_download and not compat_pycrypto_AES and '#EXT-X-KEY:METHOD=AES-128' in s:
+            if FFmpegFD.available():
+                can_download, message = False, 'The stream has AES-128 encryption and pycryptodomex is not available'
+            else:
+                message = ('The stream has AES-128 encryption and neither ffmpeg nor pycryptodomex are available; '
+                           'Decryption will be performed natively, but will be extremely slow')
+        if not can_download:
+            message = message or 'Unsupported features have been detected'
             fd = FFmpegFD(self.ydl, self.params)
-            for ph in self._progress_hooks:
-                fd.add_progress_hook(ph)
+            self.report_warning(f'{message}; extraction will be delegated to {fd.get_basename()}')
             return fd.real_download(filename, info_dict)
+        elif message:
+            self.report_warning(message)
+
+        is_webvtt = info_dict['ext'] == 'vtt'
+        if is_webvtt:
+            real_downloader = None  # Packing the fragments is not currently supported for external downloader
+        else:
+            real_downloader = get_suitable_downloader(
+                info_dict, self.params, None, protocol='m3u8_frag_urls', to_stdout=(filename == '-'))
+        if real_downloader and not real_downloader.supports_manifest(s):
+            real_downloader = None
+        if real_downloader:
+            self.to_screen(
+                '[%s] Fragment downloads will be delegated to %s' % (self.FD_NAME, real_downloader.get_basename()))
 
         def is_ad_fragment_start(s):
             return (s.startswith('#ANVATO-SEGMENT-INFO') and 'type=ad' in s
@@ -84,6 +103,8 @@ class HlsFD(FragmentFD):
         def is_ad_fragment_end(s):
             return (s.startswith('#ANVATO-SEGMENT-INFO') and 'type=master' in s
                     or s.startswith('#UPLYNK-SEGMENT') and s.endswith(',segment'))
+
+        fragments = []
 
         media_frags = 0
         ad_frags = 0
@@ -109,12 +130,14 @@ class HlsFD(FragmentFD):
             'ad_frags': ad_frags,
         }
 
-        self._prepare_and_start_frag_download(ctx)
+        if real_downloader:
+            self._prepare_external_frag_download(ctx)
+        else:
+            self._prepare_and_start_frag_download(ctx, info_dict)
 
-        fragment_retries = self.params.get('fragment_retries', 0)
-        skip_unavailable_fragments = self.params.get('skip_unavailable_fragments', True)
-        test = self.params.get('test', False)
+        extra_state = ctx.setdefault('extra_state', {})
 
+        format_index = info_dict.get('format_index')
         extra_query = None
         extra_param_to_segment_url = info_dict.get('extra_param_to_segment_url')
         if extra_param_to_segment_url:
@@ -123,12 +146,15 @@ class HlsFD(FragmentFD):
         media_sequence = 0
         decrypt_info = {'METHOD': 'NONE'}
         byte_range = {}
+        discontinuity_count = 0
         frag_index = 0
         ad_frag_next = False
         for line in s.splitlines():
             line = line.strip()
             if line:
                 if not line.startswith('#'):
+                    if format_index and discontinuity_count != format_index:
+                        continue
                     if ad_frag_next:
                         continue
                     frag_index += 1
@@ -140,50 +166,49 @@ class HlsFD(FragmentFD):
                         else compat_urlparse.urljoin(man_url, line))
                     if extra_query:
                         frag_url = update_url_query(frag_url, extra_query)
-                    count = 0
-                    headers = info_dict.get('http_headers', {})
-                    if byte_range:
-                        headers['Range'] = 'bytes=%d-%d' % (byte_range['start'], byte_range['end'] - 1)
-                    while count <= fragment_retries:
-                        try:
-                            success, frag_content = self._download_fragment(
-                                ctx, frag_url, info_dict, headers)
-                            if not success:
-                                return False
-                            break
-                        except compat_urllib_error.HTTPError as err:
-                            # Unavailable (possibly temporary) fragments may be served.
-                            # First we try to retry then either skip or abort.
-                            # See https://github.com/ytdl-org/youtube-dl/issues/10165,
-                            # https://github.com/ytdl-org/youtube-dl/issues/10448).
-                            count += 1
-                            if count <= fragment_retries:
-                                self.report_retry_fragment(err, frag_index, count, fragment_retries)
-                    if count > fragment_retries:
-                        if skip_unavailable_fragments:
-                            i += 1
-                            media_sequence += 1
-                            self.report_skip_fragment(frag_index)
-                            continue
-                        self.report_error(
-                            'giving up after %s fragment retries' % fragment_retries)
-                        return False
-                    if decrypt_info['METHOD'] == 'AES-128':
-                        iv = decrypt_info.get('IV') or compat_struct_pack('>8xq', media_sequence)
-                        decrypt_info['KEY'] = decrypt_info.get('KEY') or self.ydl.urlopen(
-                            self._prepare_url(info_dict, info_dict.get('_decryption_key_url') or decrypt_info['URI'])).read()
-                        # Don't decrypt the content in tests since the data is explicitly truncated and it's not to a valid block
-                        # size (see https://github.com/ytdl-org/youtube-dl/pull/27660). Tests only care that the correct data downloaded,
-                        # not what it decrypts to.
-                        if not test:
-                            frag_content = AES.new(
-                                decrypt_info['KEY'], AES.MODE_CBC, iv).decrypt(frag_content)
-                    self._append_fragment(ctx, frag_content)
-                    # We only download the first fragment during the test
-                    if test:
-                        break
-                    i += 1
+
+                    fragments.append({
+                        'frag_index': frag_index,
+                        'url': frag_url,
+                        'decrypt_info': decrypt_info,
+                        'byte_range': byte_range,
+                        'media_sequence': media_sequence,
+                    })
                     media_sequence += 1
+
+                elif line.startswith('#EXT-X-MAP'):
+                    if format_index and discontinuity_count != format_index:
+                        continue
+                    if frag_index > 0:
+                        self.report_error(
+                            'Initialization fragment found after media fragments, unable to download')
+                        return False
+                    frag_index += 1
+                    map_info = parse_m3u8_attributes(line[11:])
+                    frag_url = (
+                        map_info.get('URI')
+                        if re.match(r'^https?://', map_info.get('URI'))
+                        else compat_urlparse.urljoin(man_url, map_info.get('URI')))
+                    if extra_query:
+                        frag_url = update_url_query(frag_url, extra_query)
+
+                    fragments.append({
+                        'frag_index': frag_index,
+                        'url': frag_url,
+                        'decrypt_info': decrypt_info,
+                        'byte_range': byte_range,
+                        'media_sequence': media_sequence
+                    })
+                    media_sequence += 1
+
+                    if map_info.get('BYTERANGE'):
+                        splitted_byte_range = map_info.get('BYTERANGE').split('@')
+                        sub_range_start = int(splitted_byte_range[1]) if len(splitted_byte_range) == 2 else byte_range['end']
+                        byte_range = {
+                            'start': sub_range_start,
+                            'end': sub_range_start + int(splitted_byte_range[0]),
+                        }
+
                 elif line.startswith('#EXT-X-KEY'):
                     decrypt_url = decrypt_info.get('URI')
                     decrypt_info = parse_m3u8_attributes(line[11:])
@@ -197,6 +222,7 @@ class HlsFD(FragmentFD):
                             decrypt_info['URI'] = update_url_query(decrypt_info['URI'], extra_query)
                         if decrypt_url != decrypt_info['URI']:
                             decrypt_info['KEY'] = None
+
                 elif line.startswith('#EXT-X-MEDIA-SEQUENCE'):
                     media_sequence = int(line[22:])
                 elif line.startswith('#EXT-X-BYTERANGE'):
@@ -210,7 +236,115 @@ class HlsFD(FragmentFD):
                     ad_frag_next = True
                 elif is_ad_fragment_end(line):
                     ad_frag_next = False
+                elif line.startswith('#EXT-X-DISCONTINUITY'):
+                    discontinuity_count += 1
+                i += 1
 
-        self._finish_frag_download(ctx)
+        # We only download the first fragment during the test
+        if self.params.get('test', False):
+            fragments = [fragments[0] if fragments else None]
 
-        return True
+        if real_downloader:
+            info_copy = info_dict.copy()
+            info_copy['fragments'] = fragments
+            fd = real_downloader(self.ydl, self.params)
+            # TODO: Make progress updates work without hooking twice
+            # for ph in self._progress_hooks:
+            #     fd.add_progress_hook(ph)
+            return fd.real_download(filename, info_copy)
+
+        if is_webvtt:
+            def pack_fragment(frag_content, frag_index):
+                output = io.StringIO()
+                adjust = 0
+                overflow = False
+                mpegts_last = None
+                for block in webvtt.parse_fragment(frag_content):
+                    if isinstance(block, webvtt.CueBlock):
+                        extra_state['webvtt_mpegts_last'] = mpegts_last
+                        if overflow:
+                            extra_state['webvtt_mpegts_adjust'] += 1
+                            overflow = False
+                        block.start += adjust
+                        block.end += adjust
+
+                        dedup_window = extra_state.setdefault('webvtt_dedup_window', [])
+
+                        ready = []
+
+                        i = 0
+                        is_new = True
+                        while i < len(dedup_window):
+                            wcue = dedup_window[i]
+                            wblock = webvtt.CueBlock.from_json(wcue)
+                            i += 1
+                            if wblock.hinges(block):
+                                wcue['end'] = block.end
+                                is_new = False
+                                continue
+                            if wblock == block:
+                                is_new = False
+                                continue
+                            if wblock.end > block.start:
+                                continue
+                            ready.append(wblock)
+                            i -= 1
+                            del dedup_window[i]
+
+                        if is_new:
+                            dedup_window.append(block.as_json)
+                        for block in ready:
+                            block.write_into(output)
+
+                        # we only emit cues once they fall out of the duplicate window
+                        continue
+                    elif isinstance(block, webvtt.Magic):
+                        # take care of MPEG PES timestamp overflow
+                        if block.mpegts is None:
+                            block.mpegts = 0
+                        extra_state.setdefault('webvtt_mpegts_adjust', 0)
+                        block.mpegts += extra_state['webvtt_mpegts_adjust'] << 33
+                        if block.mpegts < extra_state.get('webvtt_mpegts_last', 0):
+                            overflow = True
+                            block.mpegts += 1 << 33
+                        mpegts_last = block.mpegts
+
+                        if frag_index == 1:
+                            extra_state['webvtt_mpegts'] = block.mpegts or 0
+                            extra_state['webvtt_local'] = block.local or 0
+                            # XXX: block.local = block.mpegts = None ?
+                        else:
+                            if block.mpegts is not None and block.local is not None:
+                                adjust = (
+                                    (block.mpegts - extra_state.get('webvtt_mpegts', 0))
+                                    - (block.local - extra_state.get('webvtt_local', 0))
+                                )
+                            continue
+                    elif isinstance(block, webvtt.HeaderBlock):
+                        if frag_index != 1:
+                            # XXX: this should probably be silent as well
+                            # or verify that all segments contain the same data
+                            self.report_warning(bug_reports_message(
+                                'Discarding a %s block found in the middle of the stream; '
+                                'if the subtitles display incorrectly,'
+                                % (type(block).__name__)))
+                            continue
+                    block.write_into(output)
+
+                return output.getvalue().encode('utf-8')
+
+            def fin_fragments():
+                dedup_window = extra_state.get('webvtt_dedup_window')
+                if not dedup_window:
+                    return b''
+
+                output = io.StringIO()
+                for cue in dedup_window:
+                    webvtt.CueBlock.from_json(cue).write_into(output)
+
+                return output.getvalue().encode('utf-8')
+
+            self.download_and_append_fragments(
+                ctx, fragments, info_dict, pack_func=pack_fragment, finish_func=fin_fragments)
+        else:
+            return self.download_and_append_fragments(ctx, fragments, info_dict)

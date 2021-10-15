@@ -1,7 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-import re
 
 from .common import InfoExtractor
 from ..utils import (
@@ -52,16 +51,16 @@ class VRTIE(InfoExtractor):
     }
 
     def _real_extract(self, url):
-        site, display_id = re.match(self._VALID_URL, url).groups()
+        site, display_id = self._match_valid_url(url).groups()
         webpage = self._download_webpage(url, display_id)
         attrs = extract_attributes(self._search_regex(
-            r'(<[^>]+class="vrtvideo"[^>]*>)', webpage, 'vrt video'))
+            r'(<[^>]+class="vrtvideo( [^"]*)?"[^>]*>)', webpage, 'vrt video'))
 
-        asset_id = attrs['data-videoid']
-        publication_id = attrs.get('data-publicationid')
+        asset_id = attrs['data-video-id']
+        publication_id = attrs.get('data-publication-id')
         if publication_id:
             asset_id = publication_id + '$' + asset_id
-        client = attrs.get('data-client') or self._CLIENT_MAP[site]
+        client = attrs.get('data-client-code') or self._CLIENT_MAP[site]
 
         title = strip_or_none(get_element_by_class(
             'vrt-title', webpage) or self._html_search_meta(

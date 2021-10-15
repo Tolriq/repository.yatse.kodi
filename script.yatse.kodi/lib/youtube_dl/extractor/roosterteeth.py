@@ -31,6 +31,19 @@ class RoosterTeethIE(InfoExtractor):
             'episode': 'Million Dollars, But... The Game Announcement',
         },
     }, {
+        'url': 'https://roosterteeth.com/watch/rwby-bonus-25',
+        'md5': 'fe8d9d976b272c18a24fe7f1f5830084',
+        'info_dict': {
+            'id': '31',
+            'display_id': 'rwby-bonus-25',
+            'title': 'Volume 2, World of Remnant 3',
+            'description': 'md5:8d58d3270292ea11da00ea712bbfb009',
+            'episode': 'Volume 2, World of Remnant 3',
+            'channel_id': 'fab60c1c-29cb-43bc-9383-5c3538d9e246',
+            'thumbnail': r're:^https?://.*\.(png|jpe?g)$',
+            'ext': 'mp4',
+        },
+    }, {
         'url': 'http://achievementhunter.roosterteeth.com/episode/off-topic-the-achievement-hunter-podcast-2016-i-didn-t-think-it-would-pass-31',
         'only_matching': True,
     }, {
@@ -50,7 +63,7 @@ class RoosterTeethIE(InfoExtractor):
         'url': 'https://roosterteeth.com/watch/million-dollars-but-season-2-million-dollars-but-the-game-announcement',
         'only_matching': True,
     }]
-    _EPISODE_BASE_URL = 'https://svod-be.roosterteeth.com/api/v1/episodes/'
+    _EPISODE_BASE_URL = 'https://svod-be.roosterteeth.com/api/v1/watch/'
 
     def _login(self):
         username, password = self._get_login_info()
@@ -86,9 +99,11 @@ class RoosterTeethIE(InfoExtractor):
         api_episode_url = self._EPISODE_BASE_URL + display_id
 
         try:
-            m3u8_url = self._download_json(
+            video_data = self._download_json(
                 api_episode_url + '/videos', display_id,
-                'Downloading video JSON metadata')['data'][0]['attributes']['url']
+                'Downloading video JSON metadata')['data'][0]
+            m3u8_url = video_data['attributes']['url']
+            # XXX: additional URL at video_data['links']['download']
         except ExtractorError as e:
             if isinstance(e.cause, compat_HTTPError) and e.cause.code == 403:
                 if self._parse_json(e.cause.read().decode(), display_id).get('access') is False:
@@ -96,7 +111,7 @@ class RoosterTeethIE(InfoExtractor):
                         '%s is only available for FIRST members' % display_id)
             raise
 
-        formats = self._extract_m3u8_formats(
+        formats, subtitles = self._extract_m3u8_formats_and_subtitles(
             m3u8_url, display_id, 'mp4', 'm3u8_native', m3u8_id='hls')
         self._sort_formats(formats)
 
@@ -109,7 +124,7 @@ class RoosterTeethIE(InfoExtractor):
 
         thumbnails = []
         for image in episode.get('included', {}).get('images', []):
-            if image.get('type') == 'episode_image':
+            if image.get('type') in ('episode_image', 'bonus_feature_image'):
                 img_attributes = image.get('attributes') or {}
                 for k in ('thumb', 'small', 'medium', 'large'):
                     img_url = img_attributes.get(k)
@@ -134,4 +149,5 @@ class RoosterTeethIE(InfoExtractor):
             'formats': formats,
             'channel_id': attributes.get('channel_id'),
             'duration': int_or_none(attributes.get('length')),
+            'subtitles': subtitles
         }

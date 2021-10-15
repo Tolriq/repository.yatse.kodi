@@ -2,100 +2,81 @@
 from __future__ import unicode_literals
 
 from .common import InfoExtractor
-from ..compat import (
-    compat_parse_qs,
-    compat_str,
-)
 from ..utils import (
     int_or_none,
-    try_get,
-    unified_timestamp,
+    parse_duration,
+    parse_iso8601
 )
 
 
 class PornFlipIE(InfoExtractor):
-    _VALID_URL = r'https?://(?:www\.)?pornflip\.com/(?:v|embed)/(?P<id>[^/?#&]+)'
-    _TESTS = [{
-        'url': 'https://www.pornflip.com/v/wz7DfNhMmep',
-        'md5': '98c46639849145ae1fd77af532a9278c',
-        'info_dict': {
-            'id': 'wz7DfNhMmep',
-            'ext': 'mp4',
-            'title': '2 Amateurs swallow make his dream cumshots true',
-            'thumbnail': r're:^https?://.*\.jpg$',
-            'duration': 112,
-            'timestamp': 1481655502,
-            'upload_date': '20161213',
-            'uploader_id': '106786',
-            'uploader': 'figifoto',
-            'view_count': int,
-            'age_limit': 18,
-        }
-    }, {
-        'url': 'https://www.pornflip.com/embed/wz7DfNhMmep',
-        'only_matching': True,
-    }, {
-        'url': 'https://www.pornflip.com/v/EkRD6-vS2-s',
-        'only_matching': True,
-    }, {
-        'url': 'https://www.pornflip.com/embed/EkRD6-vS2-s',
-        'only_matching': True,
-    }, {
-        'url': 'https://www.pornflip.com/v/NG9q6Pb_iK8',
-        'only_matching': True,
-    }]
+    _VALID_URL = r'https?://(?:www\.)?pornflip\.com/(?:(embed|sv|v)/)?(?P<id>[^/]+)'
+    _TESTS = [
+        {
+            'url': 'https://www.pornflip.com/dzv9Mtw1qj2/sv/brazzers-double-dare-two-couples-fucked-jenna-reid-maya-bijou',
+            'info_dict': {
+                'id': 'dzv9Mtw1qj2',
+                'ext': 'mp4',
+                'title': 'Brazzers - Double Dare Two couples fucked Jenna Reid Maya Bijou',
+                'description': 'md5:d2b69e6cc743c5fd158e162aa7f05821',
+                'duration': 476,
+                'like_count': int,
+                'dislike_count': int,
+                'view_count': int,
+                'timestamp': 1617846819,
+                'upload_date': '20210408',
+                'uploader': 'Brazzers',
+                'age_limit': 18,
+            },
+            'params': {
+                'format': 'bestvideo',
+                'skip_download': True,
+            },
+        },
+        {
+            'url': 'https://www.pornflip.com/v/IrJEC40i21L',
+            'only_matching': True,
+        },
+        {
+            'url': 'https://www.pornflip.com/Z3jzbChC5-P/sexintaxi-e-sereyna-gomez-czech-naked-couple',
+            'only_matching': True,
+        },
+        {
+            'url': 'https://www.pornflip.com/embed/bLcDFxnrZnU',
+            'only_matching': True,
+        },
+    ]
+    _HOST = 'www.pornflip.com'
 
     def _real_extract(self, url):
         video_id = self._match_id(url)
-
         webpage = self._download_webpage(
-            'https://www.pornflip.com/v/%s' % video_id, video_id)
-
-        flashvars = compat_parse_qs(self._search_regex(
-            r'<embed[^>]+flashvars=(["\'])(?P<flashvars>(?:(?!\1).)+)\1',
-            webpage, 'flashvars', group='flashvars'))
-
-        title = flashvars['video_vars[title]'][0]
-
-        def flashvar(kind):
-            return try_get(
-                flashvars, lambda x: x['video_vars[%s]' % kind][0], compat_str)
-
-        formats = []
-        for key, value in flashvars.items():
-            if not (value and isinstance(value, list)):
-                continue
-            format_url = value[0]
-            if key == 'video_vars[hds_manifest]':
-                formats.extend(self._extract_mpd_formats(
-                    format_url, video_id, mpd_id='dash', fatal=False))
-                continue
-            height = self._search_regex(
-                r'video_vars\[video_urls\]\[(\d+)', key, 'height', default=None)
-            if not height:
-                continue
-            formats.append({
-                'url': format_url,
-                'format_id': 'http-%s' % height,
-                'height': int_or_none(height),
-            })
+            'https://{}/sv/{}'.format(self._HOST, video_id), video_id, headers={'host': self._HOST})
+        description = self._html_search_regex(r'&p\[summary\]=(.*?)\s*&p', webpage, 'description', fatal=False)
+        duration = self._search_regex(r'"duration":\s+"([^"]+)",', webpage, 'duration', fatal=False)
+        view_count = self._search_regex(r'"interactionCount":\s+"([^"]+)"', webpage, 'view_count', fatal=False)
+        title = self._html_search_regex(r'id="mediaPlayerTitleLink"[^>]*>(.+)</a>', webpage, 'title', fatal=False)
+        uploader = self._html_search_regex(r'class="title-chanel"[^>]*>[^<]*<a[^>]*>([^<]+)<', webpage, 'uploader', fatal=False)
+        upload_date = self._search_regex(r'"uploadDate":\s+"([^"]+)",', webpage, 'upload_date', fatal=False)
+        likes = self._html_search_regex(
+            r'class="btn btn-up-rating[^>]*>[^<]*<i[^>]*>[^<]*</i>[^>]*<span[^>]*>[^0-9]*([0-9]+)[^<0-9]*<', webpage, 'like_count', fatal=False)
+        dislikes = self._html_search_regex(
+            r'class="btn btn-down-rating[^>]*>[^<]*<i[^>]*>[^<]*</i>[^>]*<span[^>]*>[^0-9]*([0-9]+)[^<0-9]*<', webpage, 'dislike_count', fatal=False)
+        mpd_url = self._search_regex(r'"([^"]+userscontent.net/dash/[0-9]+/manifest.mpd[^"]*)"', webpage, 'mpd_url').replace('&amp;', '&')
+        formats = self._extract_mpd_formats(mpd_url, video_id, mpd_id='dash')
         self._sort_formats(formats)
 
-        uploader = self._html_search_regex(
-            (r'<span[^>]+class="name"[^>]*>\s*<a[^>]+>\s*<strong>(?P<uploader>[^<]+)',
-             r'<meta[^>]+content=(["\'])[^>]*\buploaded by (?P<uploader>.+?)\1'),
-            webpage, 'uploader', fatal=False, group='uploader')
-
         return {
-            'id': video_id,
-            'formats': formats,
-            'title': title,
-            'thumbnail': flashvar('big_thumb'),
-            'duration': int_or_none(flashvar('duration')),
-            'timestamp': unified_timestamp(self._html_search_meta(
-                'uploadDate', webpage, 'timestamp')),
-            'uploader_id': flashvar('author_id'),
-            'uploader': uploader,
-            'view_count': int_or_none(flashvar('views')),
             'age_limit': 18,
+            'description': description,
+            'dislike_count': int_or_none(dislikes),
+            'duration': parse_duration(duration),
+            'formats': formats,
+            'id': video_id,
+            'like_count': int_or_none(likes),
+            'timestamp': parse_iso8601(upload_date),
+            'thumbnail': self._og_search_thumbnail(webpage),
+            'title': title,
+            'uploader': uploader,
+            'view_count': int_or_none(view_count),
         }

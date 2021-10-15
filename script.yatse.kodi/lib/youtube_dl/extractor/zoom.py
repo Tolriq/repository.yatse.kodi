@@ -1,7 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-import re
 
 from .common import InfoExtractor
 from ..utils import (
@@ -10,6 +9,7 @@ from ..utils import (
     js_to_json,
     parse_filesize,
     urlencode_postdata,
+    urljoin,
 )
 
 
@@ -27,7 +27,7 @@ class ZoomIE(InfoExtractor):
     }
 
     def _real_extract(self, url):
-        base_url, play_id = re.match(self._VALID_URL, url).groups()
+        base_url, play_id = self._match_valid_url(url).groups()
         webpage = self._download_webpage(url, play_id)
 
         try:
@@ -35,7 +35,7 @@ class ZoomIE(InfoExtractor):
         except ExtractorError:
             form = None
         if form:
-            password = self._downloader.params.get('videopassword')
+            password = self.get_param('videopassword')
             if not password:
                 raise ExtractorError(
                     'This video is protected by a passcode, use the --video-password option', expected=True)
@@ -55,10 +55,19 @@ class ZoomIE(InfoExtractor):
             r'(?s)window\.__data__\s*=\s*({.+?});',
             webpage, 'data'), play_id, js_to_json)
 
+        subtitles = {}
+        for _type in ('transcript', 'cc'):
+            if data.get('%sUrl' % _type):
+                subtitles[_type] = [{
+                    'url': urljoin(base_url, data['%sUrl' % _type]),
+                    'ext': 'vtt',
+                }]
+
         return {
             'id': play_id,
             'title': data['topic'],
             'url': data['viewMp4Url'],
+            'subtitles': subtitles,
             'width': int_or_none(data.get('viewResolvtionsWidth')),
             'height': int_or_none(data.get('viewResolvtionsHeight')),
             'http_headers': {

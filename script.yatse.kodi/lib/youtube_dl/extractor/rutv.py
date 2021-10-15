@@ -123,7 +123,7 @@ class RUTVIE(InfoExtractor):
             return mobj.group('url')
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         video_id = mobj.group('id')
         video_path = mobj.group('path')
 
@@ -139,7 +139,7 @@ class RUTVIE(InfoExtractor):
         is_live = video_type == 'live'
 
         json_data = self._download_json(
-            'http://player.rutv.ru/iframe/data%s/id/%s' % ('live' if is_live else 'video', video_id),
+            'http://player.vgtrk.com/iframe/data%s/id/%s' % ('live' if is_live else 'video', video_id),
             video_id, 'Downloading JSON')
 
         if json_data['errors']:
@@ -180,11 +180,11 @@ class RUTVIE(InfoExtractor):
                         'rtmp_live': True,
                         'ext': 'flv',
                         'vbr': int(quality),
-                        'preference': preference,
+                        'quality': preference,
                     }
                 elif transport == 'm3u8':
                     formats.extend(self._extract_m3u8_formats(
-                        url, video_id, 'mp4', preference=preference, m3u8_id='hls'))
+                        url, video_id, 'mp4', quality=preference, m3u8_id='hls'))
                     continue
                 else:
                     fmt = {

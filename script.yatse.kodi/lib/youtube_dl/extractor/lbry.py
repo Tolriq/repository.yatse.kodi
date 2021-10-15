@@ -6,16 +6,15 @@ import json
 
 from .common import InfoExtractor
 from ..compat import (
-    compat_parse_qs,
     compat_str,
     compat_urllib_parse_unquote,
-    compat_urllib_parse_urlparse,
 )
 from ..utils import (
     determine_ext,
     ExtractorError,
     int_or_none,
     mimetype2ext,
+    parse_qs,
     OnDemandPagedList,
     try_get,
     urljoin,
@@ -23,27 +22,34 @@ from ..utils import (
 
 
 class LBRYBaseIE(InfoExtractor):
-    _BASE_URL_REGEX = r'https?://(?:www\.)?(?:lbry\.tv|odysee\.com)/'
+    _BASE_URL_REGEX = r'(?:https?://(?:www\.)?(?:lbry\.tv|odysee\.com)/|lbry://)'
     _CLAIM_ID_REGEX = r'[0-9a-f]{1,40}'
-    _OPT_CLAIM_ID = '[^:/?#&]+(?::%s)?' % _CLAIM_ID_REGEX
+    _OPT_CLAIM_ID = '[^:/?#&]+(?:[:#]%s)?' % _CLAIM_ID_REGEX
     _SUPPORTED_STREAM_TYPES = ['video', 'audio']
 
     def _call_api_proxy(self, method, display_id, params, resource):
-        return self._download_json(
+        response = self._download_json(
             'https://api.lbry.tv/api/v1/proxy',
             display_id, 'Downloading %s JSON metadata' % resource,
             headers={'Content-Type': 'application/json-rpc'},
             data=json.dumps({
                 'method': method,
                 'params': params,
-            }).encode())['result']
+            }).encode())
+        err = response.get('error')
+        if err:
+            raise ExtractorError(
+                f'{self.IE_NAME} said: {err.get("code")} - {err.get("message")}', expected=True)
+        return response['result']
 
     def _resolve_url(self, url, display_id, resource):
         return self._call_api_proxy(
             'resolve', display_id, {'urls': url}, resource)[url]
 
     def _permanent_url(self, url, claim_name, claim_id):
-        return urljoin(url, '/%s:%s' % (claim_name, claim_id))
+        return urljoin(
+            url.replace('lbry://', 'https://lbry.tv/'),
+            '/%s:%s' % (claim_name, claim_id))
 
     def _parse_stream(self, stream, url):
         stream_value = stream.get('value') or {}
@@ -164,6 +170,9 @@ class LBRYIE(LBRYBaseIE):
     }, {
         'url': 'https://lbry.tv/@lacajadepandora:a/TRUMP-EST%C3%81-BIEN-PUESTO-con-Pilar-Baselga,-Carlos-Senra,-Luis-Palacios-(720p_30fps_H264-192kbit_AAC):1',
         'only_matching': True,
+    }, {
+        'url': 'lbry://@lbry#3f/odysee#7',
+        'only_matching': True,
     }]
 
     def _real_extract(self, url):
@@ -201,7 +210,7 @@ class LBRYIE(LBRYBaseIE):
 
 class LBRYChannelIE(LBRYBaseIE):
     IE_NAME = 'lbry:channel'
-    _VALID_URL = LBRYBaseIE._BASE_URL_REGEX + r'(?P<id>@%s)/?(?:[?#&]|$)' % LBRYBaseIE._OPT_CLAIM_ID
+    _VALID_URL = LBRYBaseIE._BASE_URL_REGEX + r'(?P<id>@%s)/?(?:[?&]|$)' % LBRYBaseIE._OPT_CLAIM_ID
     _TESTS = [{
         'url': 'https://lbry.tv/@LBRYFoundation:0',
         'info_dict': {
@@ -212,6 +221,9 @@ class LBRYChannelIE(LBRYBaseIE):
         'playlist_count': 29,
     }, {
         'url': 'https://lbry.tv/@LBRYFoundation',
+        'only_matching': True,
+    }, {
+        'url': 'lbry://@lbry#3f',
         'only_matching': True,
     }]
     _PAGE_SIZE = 50
@@ -248,7 +260,7 @@ class LBRYChannelIE(LBRYBaseIE):
         result = self._resolve_url(
             'lbry://' + display_id, display_id, 'channel')
         claim_id = result['claim_id']
-        qs = compat_parse_qs(compat_urllib_parse_urlparse(url).query)
+        qs = parse_qs(url)
         content = qs.get('content', [None])[0]
         params = {
             'fee_amount': qs.get('fee_amount', ['>=0'])[0],

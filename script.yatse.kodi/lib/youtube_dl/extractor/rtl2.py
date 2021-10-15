@@ -51,7 +51,7 @@ class RTL2IE(InfoExtractor):
     }]
 
     def _real_extract(self, url):
-        vico_id, vivi_id, display_id = re.match(self._VALID_URL, url).groups()
+        vico_id, vivi_id, display_id = self._match_valid_url(url).groups()
         if not vico_id:
             webpage = self._download_webpage(url, display_id)
 
@@ -93,7 +93,7 @@ class RTL2IE(InfoExtractor):
                 'flash_version': 'LNX 11,2,202,429',
                 'rtmp_conn': rtmp_conn,
                 'no_resume': True,
-                'preference': 1,
+                'quality': 1,
             })
 
         m3u8_url = video_info.get('streamurl_hls')

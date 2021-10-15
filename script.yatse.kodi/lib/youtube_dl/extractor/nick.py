@@ -1,66 +1,73 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-import re
 
 from .mtv import MTVServicesInfoExtractor
 from ..utils import update_url_query
 
 
 class NickIE(MTVServicesInfoExtractor):
-    # None of videos on the website are still alive?
     IE_NAME = 'nick.com'
-    _VALID_URL = r'https?://(?P<domain>(?:(?:www|beta)\.)?nick(?:jr)?\.com)/(?:[^/]+/)?(?:videos/clip|[^/]+/videos)/(?P<id>[^/?#.]+)'
+    _VALID_URL = r'https?://(?P<domain>(?:www\.)?nick(?:jr)?\.com)/(?:[^/]+/)?(?P<type>videos/clip|[^/]+/videos|episodes/[^/]+)/(?P<id>[^/?#.]+)'
     _FEED_URL = 'http://udat.mtvnservices.com/service1/dispatch.htm'
     _GEO_COUNTRIES = ['US']
     _TESTS = [{
-        'url': 'http://www.nick.com/videos/clip/alvinnn-and-the-chipmunks-112-full-episode.html',
+        'url': 'https://www.nick.com/episodes/sq47rw/spongebob-squarepants-a-place-for-pets-lockdown-for-love-season-13-ep-1',
+        'info_dict': {
+            'description': 'md5:0650a9eb88955609d5c1d1c79292e234',
+            'title': 'A Place for Pets/Lockdown for Love',
+        },
         'playlist': [
             {
-                'md5': '6e5adc1e28253bbb1b28ab05403dd4d4',
+                'md5': 'cb8a2afeafb7ae154aca5a64815ec9d6',
                 'info_dict': {
-                    'id': 'be6a17b0-412d-11e5-8ff7-0026b9414f30',
+                    'id': '85ee8177-d6ce-48f8-9eee-a65364f8a6df',
                     'ext': 'mp4',
-                    'title': 'ALVINNN!!! and The Chipmunks: "Mojo Missing/Who\'s The Animal" S1',
-                    'description': 'Alvin is convinced his mojo was in a cap he gave to a fan, and must find a way to get his hat back before the Chipmunks’ big concert.\nDuring a costume visit to the zoo, Alvin finds himself mistaken for the real Tasmanian devil.',
+                    'title': 'SpongeBob SquarePants: "A Place for Pets/Lockdown for Love" S1',
+                    'description': 'A Place for Pets/Lockdown for Love: When customers bring pets into the Krusty Krab, Mr. Krabs realizes pets are more profitable than owners. Plankton ruins another date with Karen, so she puts the Chum Bucket on lockdown until he proves his affection.',
 
                 }
             },
             {
-                'md5': 'd7be441fc53a1d4882fa9508a1e5b3ce',
+                'md5': '839a04f49900a1fcbf517020d94e0737',
                 'info_dict': {
-                    'id': 'be6b8f96-412d-11e5-8ff7-0026b9414f30',
+                    'id': '2e2a9960-8fd4-411d-868b-28eb1beb7fae',
                     'ext': 'mp4',
-                    'title': 'ALVINNN!!! and The Chipmunks: "Mojo Missing/Who\'s The Animal" S2',
-                    'description': 'Alvin is convinced his mojo was in a cap he gave to a fan, and must find a way to get his hat back before the Chipmunks’ big concert.\nDuring a costume visit to the zoo, Alvin finds himself mistaken for the real Tasmanian devil.',
+                    'title': 'SpongeBob SquarePants: "A Place for Pets/Lockdown for Love" S2',
+                    'description': 'A Place for Pets/Lockdown for Love: When customers bring pets into the Krusty Krab, Mr. Krabs realizes pets are more profitable than owners. Plankton ruins another date with Karen, so she puts the Chum Bucket on lockdown until he proves his affection.',
 
                 }
             },
             {
-                'md5': 'efffe1728a234b2b0d2f2b343dd1946f',
+                'md5': 'f1145699f199770e2919ee8646955d46',
                 'info_dict': {
-                    'id': 'be6cf7e6-412d-11e5-8ff7-0026b9414f30',
+                    'id': 'dc91c304-6876-40f7-84a6-7aece7baa9d0',
                     'ext': 'mp4',
-                    'title': 'ALVINNN!!! and The Chipmunks: "Mojo Missing/Who\'s The Animal" S3',
-                    'description': 'Alvin is convinced his mojo was in a cap he gave to a fan, and must find a way to get his hat back before the Chipmunks’ big concert.\nDuring a costume visit to the zoo, Alvin finds himself mistaken for the real Tasmanian devil.',
+                    'title': 'SpongeBob SquarePants: "A Place for Pets/Lockdown for Love" S3',
+                    'description': 'A Place for Pets/Lockdown for Love: When customers bring pets into the Krusty Krab, Mr. Krabs realizes pets are more profitable than owners. Plankton ruins another date with Karen, so she puts the Chum Bucket on lockdown until he proves his affection.',
+
                 }
             },
             {
-                'md5': '1ec6690733ab9f41709e274a1d5c7556',
+                'md5': 'd463116875aee2585ee58de3b12caebd',
                 'info_dict': {
-                    'id': 'be6e3354-412d-11e5-8ff7-0026b9414f30',
+                    'id': '5d929486-cf4c-42a1-889a-6e0d183a101a',
                     'ext': 'mp4',
-                    'title': 'ALVINNN!!! and The Chipmunks: "Mojo Missing/Who\'s The Animal" S4',
-                    'description': 'Alvin is convinced his mojo was in a cap he gave to a fan, and must find a way to get his hat back before the Chipmunks’ big concert.\nDuring a costume visit to the zoo, Alvin finds himself mistaken for the real Tasmanian devil.',
+                    'title': 'SpongeBob SquarePants: "A Place for Pets/Lockdown for Love" S4',
+                    'description': 'A Place for Pets/Lockdown for Love: When customers bring pets into the Krusty Krab, Mr. Krabs realizes pets are more profitable than owners. Plankton ruins another date with Karen, so she puts the Chum Bucket on lockdown until he proves his affection.',
+
                 }
             },
         ],
     }, {
-        'url': 'http://www.nickjr.com/paw-patrol/videos/pups-save-a-goldrush-s3-ep302-full-episode/',
-        'only_matching': True,
-    }, {
-        'url': 'http://beta.nick.com/nicky-ricky-dicky-and-dawn/videos/nicky-ricky-dicky-dawn-301-full-episode/',
-        'only_matching': True,
+        'url': 'http://www.nickjr.com/blues-clues-and-you/videos/blues-clues-and-you-original-209-imagination-station/',
+        'info_dict': {
+            'id': '31631529-2fc5-430b-b2ef-6a74b4609abd',
+            'ext': 'mp4',
+            'description': 'md5:9d65a66df38e02254852794b2809d1cf',
+            'title': 'Blue\'s Imagination Station',
+        },
+        'skip': 'Not accessible?'
     }]
 
     def _get_feed_query(self, uri):
@@ -70,7 +77,9 @@ class NickIE(MTVServicesInfoExtractor):
         }
 
     def _real_extract(self, url):
-        domain, display_id = re.match(self._VALID_URL, url).groups()
+        domain, video_type, display_id = self._match_valid_url(url).groups()
+        if video_type.startswith("episodes"):
+            return super()._real_extract(url)
         video_data = self._download_json(
             'http://%s/data/video.endLevel.json' % domain,
             display_id, query={
@@ -108,7 +117,7 @@ class NickBrIE(MTVServicesInfoExtractor):
     }]
 
     def _real_extract(self, url):
-        domain, display_id = re.match(self._VALID_URL, url).groups()
+        domain, display_id = self._match_valid_url(url).groups()
         webpage = self._download_webpage(url, display_id)
         uri = self._search_regex(
             r'data-(?:contenturi|mgid)="([^"]+)', webpage, 'mgid')
@@ -176,21 +185,11 @@ class NickDeIE(MTVServicesInfoExtractor):
         'only_matching': True,
     }]
 
-    def _extract_mrss_url(self, webpage, host):
-        return update_url_query(self._search_regex(
-            r'data-mrss=(["\'])(?P<url>http.+?)\1', webpage, 'mrss url', group='url'),
-            {'siteKey': host})
-
-    def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
-        video_id = mobj.group('id')
-        host = mobj.group('host')
-
-        webpage = self._download_webpage(url, video_id)
-
-        mrss_url = self._extract_mrss_url(webpage, host)
-
-        return self._get_videos_info_from_url(mrss_url, video_id)
+    def _get_feed_url(self, uri, url=None):
+        video_id = self._id_from_uri(uri)
+        config = self._download_json(
+            'http://media.mtvnservices.com/pmt/e1/access/index.html?uri=%s&configtype=edge&ref=%s' % (uri, url), video_id)
+        return self._remove_template_parameter(config['feedWithQueryParams'])
 
 
 class NickNightIE(NickDeIE):
@@ -245,5 +244,5 @@ class NickRuIE(MTVServicesInfoExtractor):
     def _real_extract(self, url):
         video_id = self._match_id(url)
         webpage = self._download_webpage(url, video_id)
-        mgid = self._extract_mgid(webpage)
+        mgid = self._extract_mgid(webpage, url)
         return self.url_result('http://media.mtvnservices.com/embed/%s' % mgid)

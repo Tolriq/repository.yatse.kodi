@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 import json
-import re
 
 from .common import InfoExtractor
 from ..compat import compat_str
@@ -56,8 +55,7 @@ class PinterestBaseIE(InfoExtractor):
                         'height': int_or_none(format_dict.get('height')),
                         'duration': duration,
                     })
-            self._sort_formats(
-                formats, field_preference=('height', 'width', 'tbr', 'format_id'))
+            self._sort_formats(formats)
 
         description = data.get('description') or data.get('description_html') or data.get('seo_description')
         timestamp = unified_timestamp(data.get('created_at'))
@@ -166,7 +164,7 @@ class PinterestCollectionIE(PinterestBaseIE):
             PinterestCollectionIE, cls).suitable(url)
 
     def _real_extract(self, url):
-        username, slug = re.match(self._VALID_URL, url).groups()
+        username, slug = self._match_valid_url(url).groups()
         board = self._call_api(
             'Board', slug, {
                 'slug': slug,

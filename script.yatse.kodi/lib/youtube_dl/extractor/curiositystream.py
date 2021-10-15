@@ -145,8 +145,17 @@ class CuriosityStreamIE(CuriosityStreamBaseIE):
 
 class CuriosityStreamCollectionIE(CuriosityStreamBaseIE):
     IE_NAME = 'curiositystream:collection'
-    _VALID_URL = r'https?://(?:app\.)?curiositystream\.com/(?:collection|series)/(?P<id>\d+)'
+    _VALID_URL = r'https?://(?:app\.)?curiositystream\.com/(?:collections?|series)/(?P<id>\d+)'
+    _API_BASE_URL = 'https://api.curiositystream.com/v2/collections/'
     _TESTS = [{
+        'url': 'https://curiositystream.com/collections/86',
+        'info_dict': {
+            'id': '86',
+            'title': 'Staff Picks',
+            'description': 'Wondering where to start? Here are a few of our favorite series and films... from our couch to yours.',
+        },
+        'playlist_mincount': 7,
+    }, {
         'url': 'https://app.curiositystream.com/collection/2',
         'info_dict': {
             'id': '2',
@@ -157,18 +166,21 @@ class CuriosityStreamCollectionIE(CuriosityStreamBaseIE):
     }, {
         'url': 'https://curiositystream.com/series/2',
         'only_matching': True,
+    }, {
+        'url': 'https://curiositystream.com/collections/36',
+        'only_matching': True,
     }]
 
     def _real_extract(self, url):
         collection_id = self._match_id(url)
-        collection = self._call_api(
-            'collections/' + collection_id, collection_id)
+        collection = self._call_api(collection_id, collection_id)
         entries = []
         for media in collection.get('media', []):
             media_id = compat_str(media.get('id'))
+            media_type, ie = ('series', CuriosityStreamCollectionIE) if media.get('is_collection') else ('video', CuriosityStreamIE)
             entries.append(self.url_result(
-                'https://curiositystream.com/video/' + media_id,
-                CuriosityStreamIE.ie_key(), media_id))
+                'https://curiositystream.com/%s/%s' % (media_type, media_id),
+                ie=ie.ie_key(), video_id=media_id))
         return self.playlist_result(
             entries, collection_id,
             collection.get('title'), collection.get('description'))

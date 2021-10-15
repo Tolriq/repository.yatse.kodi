@@ -21,6 +21,16 @@ from ..utils import (
     unsmuggle_url,
 )
 
+# This import causes a ModuleNotFoundError on some systems for unknown reason.
+# See issues:
+# https://github.com/yt-dlp/yt-dlp/issues/35
+# https://github.com/ytdl-org/youtube-dl/issues/27449
+# https://github.com/animelover1984/youtube-dl/issues/17
+try:
+    from .anvato_token_generator import NFLTokenGenerator
+except ImportError:
+    NFLTokenGenerator = None
+
 
 def md5_text(s):
     if not isinstance(s, compat_str):
@@ -203,6 +213,10 @@ class AnvatoIE(InfoExtractor):
         'telemundo': 'anvato_mcp_telemundo_web_prod_c5278d51ad46fda4b6ca3d0ea44a7846a054f582'
     }
 
+    _TOKEN_GENERATORS = {
+        'GXvEgwyJeWem8KCYXfeoHWknwP48Mboj': NFLTokenGenerator,
+    }
+
     _API_KEY = '3hwbSuqqT690uxjNYBktSQpa5ZrpYYR0Iofx7NcJHyA'
 
     _ANVP_RE = r'<script[^>]+\bdata-anvp\s*=\s*(["\'])(?P<anvp>(?:(?!\1).)+)\1'
@@ -262,9 +276,12 @@ class AnvatoIE(InfoExtractor):
             'anvrid': anvrid,
             'anvts': server_time,
         }
-        api['anvstk'] = md5_text('%s|%s|%d|%s' % (
-            access_key, anvrid, server_time,
-            self._ANVACK_TABLE.get(access_key, self._API_KEY)))
+        if self._TOKEN_GENERATORS.get(access_key) is not None:
+            api['anvstk2'] = self._TOKEN_GENERATORS[access_key].generate(self, access_key, video_id)
+        else:
+            api['anvstk'] = md5_text('%s|%s|%d|%s' % (
+                access_key, anvrid, server_time,
+                self._ANVACK_TABLE.get(access_key, self._API_KEY)))
 
         return self._download_json(
             video_data_url, video_id, transform_source=strip_jsonp,
@@ -373,7 +390,7 @@ class AnvatoIE(InfoExtractor):
             'countries': smuggled_data.get('geo_countries'),
         })
 
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         access_key, video_id = mobj.group('access_key_or_mcp', 'id')
         if access_key not in self._ANVACK_TABLE:
             access_key = self._MCP_TO_ACCESS_KEY_TABLE.get(

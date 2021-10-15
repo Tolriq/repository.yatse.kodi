@@ -44,16 +44,24 @@ class WDRIE(InfoExtractor):
 
         tracker_data = metadata['trackerData']
         title = tracker_data['trackerClipTitle']
-
         media_resource = metadata['mediaResource']
 
         formats = []
+        subtitles = {}
 
         # check if the metadata contains a direct URL to a file
         for kind, media in media_resource.items():
-            if not isinstance(media, dict):
+            if kind == 'captionsHash':
+                for ext, url in media.items():
+                    subtitles.setdefault('de', []).append({
+                        'url': url,
+                        'ext': ext,
+                    })
                 continue
+
             if kind not in ('dflt', 'alt'):
+                continue
+            if not isinstance(media, dict):
                 continue
 
             for tag_name, medium_url in media.items():
@@ -86,7 +94,6 @@ class WDRIE(InfoExtractor):
 
         self._sort_formats(formats)
 
-        subtitles = {}
         caption_url = media_resource.get('captionURL')
         if caption_url:
             subtitles['de'] = [{
@@ -233,7 +240,7 @@ class WDRPageIE(InfoExtractor):
     ]
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         display_id = mobj.group('display_id')
         webpage = self._download_webpage(url, display_id)
 
@@ -335,7 +342,7 @@ class WDRMobileIE(InfoExtractor):
     }
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         return {
             'id': mobj.group('id'),
             'title': mobj.group('title'),

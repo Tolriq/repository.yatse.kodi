@@ -34,8 +34,8 @@ class TVPlayIE(InfoExtractor):
                                 tvplay(?:\.skaties)?\.lv(?:/parraides)?|
                                 (?:tv3play|play\.tv3)\.lt(?:/programos)?|
                                 tv3play(?:\.tv3)?\.ee/sisu|
-                                (?:tv(?:3|6|8|10)play|viafree)\.se/program|
-                                (?:(?:tv3play|viasat4play|tv6play|viafree)\.no|(?:tv3play|viafree)\.dk)/programmer|
+                                (?:tv(?:3|6|8|10)play)\.se/program|
+                                (?:(?:tv3play|viasat4play|tv6play)\.no|(?:tv3play)\.dk)/programmer|
                                 play\.nova(?:tv)?\.bg/programi
                             )
                             /(?:[^/]+/)+
@@ -224,10 +224,6 @@ class TVPlayIE(InfoExtractor):
             'only_matching': True,
         },
         {
-            'url': 'http://www.viafree.se/program/underhallning/i-like-radio-live/sasong-1/676869',
-            'only_matching': True,
-        },
-        {
             'url': 'mtg:418113',
             'only_matching': True,
         }
@@ -298,7 +294,8 @@ class TVPlayIE(InfoExtractor):
 
         if not formats and video.get('is_geo_blocked'):
             self.raise_geo_restricted(
-                'This content might not be available in your country due to copyright reasons')
+                'This content might not be available in your country due to copyright reasons',
+                metadata_available=True)
 
         self._sort_formats(formats)
 
@@ -339,8 +336,8 @@ class ViafreeIE(InfoExtractor):
     _VALID_URL = r'''(?x)
                     https?://
                         (?:www\.)?
-                        viafree\.(?P<country>dk|no|se)
-                        /(?P<id>program(?:mer)?/(?:[^/]+/)+[^/?#&]+)
+                        viafree\.(?P<country>dk|no|se|fi)
+                        /(?P<id>(?:program(?:mer)?|ohjelmat)?/(?:[^/]+/)+[^/?#&]+)
                     '''
     _TESTS = [{
         'url': 'http://www.viafree.no/programmer/underholdning/det-beste-vorspielet/sesong-2/episode-1',
@@ -359,6 +356,23 @@ class ViafreeIE(InfoExtractor):
             'skip_download': True,
         },
     }, {
+        'url': 'https://www.viafree.dk/programmer/humor/comedy-central-roast-of-charlie-sheen/film/1047660',
+        'info_dict': {
+            'id': '1047660',
+            'ext': 'mp4',
+            'title': 'Comedy Central Roast of Charlie Sheen - Comedy Central Roast of Charlie Sheen',
+            'description': 'md5:ec956d941ae9fd7c65a48fd64951dc6d',
+            'series': 'Comedy Central Roast of Charlie Sheen',
+            'season_number': 1,
+            'duration': 3747,
+            'timestamp': 1608246060,
+            'upload_date': '20201217'
+        },
+        'params': {
+            'format': 'bestvideo',
+            'skip_download': True
+        }
+    }, {
         # with relatedClips
         'url': 'http://www.viafree.se/program/reality/sommaren-med-youtube-stjarnorna/sasong-1/avsnitt-1',
         'only_matching': True,
@@ -372,15 +386,17 @@ class ViafreeIE(InfoExtractor):
     }, {
         'url': 'http://www.viafree.dk/programmer/reality/paradise-hotel/saeson-7/episode-5',
         'only_matching': True,
+    }, {
+        'url': 'http://www.viafree.se/program/underhallning/i-like-radio-live/sasong-1/676869',
+        'only_matching': True,
+    }, {
+        'url': 'https://www.viafree.fi/ohjelmat/entertainment/amazing-makeovers/kausi-7/jakso-2',
+        'only_matching': True,
     }]
     _GEO_BYPASS = False
 
-    @classmethod
-    def suitable(cls, url):
-        return False if TVPlayIE.suitable(url) else super(ViafreeIE, cls).suitable(url)
-
     def _real_extract(self, url):
-        country, path = re.match(self._VALID_URL, url).groups()
+        country, path = self._match_valid_url(url).groups()
         content = self._download_json(
             'https://viafree-content.mtg-api.com/viafree-content/v1/%s/path/%s' % (country, path), path)
         program = content['_embedded']['viafreeBlocks'][0]['_embedded']['program']
@@ -397,16 +413,16 @@ class ViafreeIE(InfoExtractor):
                 self.raise_geo_restricted(countries=[country])
             raise
 
-        formats = self._extract_m3u8_formats(stream_href, guid, 'mp4')
+        formats, subtitles = self._extract_m3u8_formats_and_subtitles(stream_href, guid, 'mp4')
         self._sort_formats(formats)
         episode = program.get('episode') or {}
-
         return {
             'id': guid,
             'title': title,
             'thumbnail': meta.get('image'),
             'description': meta.get('description'),
             'series': episode.get('seriesTitle'),
+            'subtitles': subtitles,
             'episode_number': int_or_none(episode.get('episodeNumber')),
             'season_number': int_or_none(episode.get('seasonNumber')),
             'duration': int_or_none(try_get(program, lambda x: x['video']['duration']['milliseconds']), 1000),

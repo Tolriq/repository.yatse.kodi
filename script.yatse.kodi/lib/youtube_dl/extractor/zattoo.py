@@ -182,7 +182,7 @@ class ZattooPlatformBaseIE(InfoExtractor):
                 else:
                     assert False
                 for this_format in this_formats:
-                    this_format['preference'] = preference
+                    this_format['quality'] = preference
                 formats.extend(this_formats)
         self._sort_formats(formats)
         return formats
@@ -217,7 +217,7 @@ class QuicklineIE(QuicklineBaseIE):
     }
 
     def _real_extract(self, url):
-        channel_name, video_id = re.match(self._VALID_URL, url).groups()
+        channel_name, video_id = self._match_valid_url(url).groups()
         return self._extract_video(channel_name, video_id)
 
 
@@ -262,7 +262,7 @@ class ZattooIE(ZattooBaseIE):
     }]
 
     def _real_extract(self, url):
-        channel_name, video_id, record_id = re.match(self._VALID_URL, url).groups()
+        channel_name, video_id, record_id = self._match_valid_url(url).groups()
         return self._extract_video(channel_name, video_id, record_id)
 
 

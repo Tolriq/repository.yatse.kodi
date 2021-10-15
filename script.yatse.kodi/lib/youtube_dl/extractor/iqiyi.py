@@ -280,7 +280,7 @@ class IqiyiIE(InfoExtractor):
                 msg = 'error %s' % code
                 if validation_result.get('msg'):
                     msg += ': ' + validation_result['msg']
-            self._downloader.report_warning('unable to log in: ' + msg)
+            self.report_warning('unable to log in: ' + msg)
             return False
 
         return True
@@ -373,7 +373,7 @@ class IqiyiIE(InfoExtractor):
                     'url': stream['m3utx'],
                     'format_id': vd,
                     'ext': 'mp4',
-                    'preference': self._FORMATS_MAP.get(vd, -1),
+                    'quality': self._FORMATS_MAP.get(vd, -1),
                     'protocol': 'm3u8_native',
                 })
 

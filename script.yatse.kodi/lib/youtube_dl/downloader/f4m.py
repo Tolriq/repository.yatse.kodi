@@ -267,13 +267,14 @@ class F4mFD(FragmentFD):
         media = doc.findall(_add_ns('media'))
         if not media:
             self.report_error('No media found')
-        for e in (doc.findall(_add_ns('drmAdditionalHeader'))
-                  + doc.findall(_add_ns('drmAdditionalHeaderSet'))):
-            # If id attribute is missing it's valid for all media nodes
-            # without drmAdditionalHeaderId or drmAdditionalHeaderSetId attribute
-            if 'id' not in e.attrib:
-                self.report_error('Missing ID in f4m DRM')
-        media = remove_encrypted_media(media)
+        if not self.params.get('allow_unplayable_formats'):
+            for e in (doc.findall(_add_ns('drmAdditionalHeader'))
+                      + doc.findall(_add_ns('drmAdditionalHeaderSet'))):
+                # If id attribute is missing it's valid for all media nodes
+                # without drmAdditionalHeaderId or drmAdditionalHeaderSetId attribute
+                if 'id' not in e.attrib:
+                    self.report_error('Missing ID in f4m DRM')
+            media = remove_encrypted_media(media)
         if not media:
             self.report_error('Unsupported DRM')
         return media
@@ -379,7 +380,7 @@ class F4mFD(FragmentFD):
 
         base_url_parsed = compat_urllib_parse_urlparse(base_url)
 
-        self._start_frag_download(ctx)
+        self._start_frag_download(ctx, info_dict)
 
         frag_index = 0
         while fragments_list:
@@ -433,6 +434,6 @@ class F4mFD(FragmentFD):
                     msg = 'Missed %d fragments' % (fragments_list[0][1] - (frag_i + 1))
                     self.report_warning(msg)
 
-        self._finish_frag_download(ctx)
+        self._finish_frag_download(ctx, info_dict)
 
         return True

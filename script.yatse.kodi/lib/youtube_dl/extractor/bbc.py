@@ -10,9 +10,7 @@ from .common import InfoExtractor
 from ..compat import (
     compat_etree_Element,
     compat_HTTPError,
-    compat_parse_qs,
     compat_str,
-    compat_urllib_parse_urlparse,
     compat_urlparse,
 )
 from ..utils import (
@@ -26,6 +24,7 @@ from ..utils import (
     js_to_json,
     parse_duration,
     parse_iso8601,
+    parse_qs,
     strip_or_none,
     try_get,
     unescapeHTML,
@@ -589,8 +588,8 @@ class BBCIE(BBCCoUkIE):
     _VALID_URL = r'https?://(?:www\.)?bbc\.(?:com|co\.uk)/(?:[^/]+/)+(?P<id>[^/#?]+)'
 
     _MEDIA_SETS = [
-        'mobile-tablet-main',
         'pc',
+        'mobile-tablet-main',
     ]
 
     _TESTS = [{
@@ -1271,7 +1270,7 @@ class BBCIE(BBCCoUkIE):
         entries = []
         for num, media_meta in enumerate(medias, start=1):
             formats, subtitles = self._extract_from_media_meta(media_meta, playlist_id)
-            if not formats:
+            if not formats and not self.get_param('ignore_no_formats'):
                 continue
             self._sort_formats(formats)
 
@@ -1410,7 +1409,7 @@ class BBCCoUkIPlayerPlaylistBaseIE(InfoExtractor):
 
     def _real_extract(self, url):
         pid = self._match_id(url)
-        qs = compat_parse_qs(compat_urllib_parse_urlparse(url).query)
+        qs = parse_qs(url)
         series_id = qs.get('seriesId', [None])[0]
         page = qs.get('page', [None])[0]
         per_page = 36 if page else self._PAGE_SIZE

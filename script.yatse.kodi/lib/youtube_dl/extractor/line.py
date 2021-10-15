@@ -1,12 +1,10 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-import re
 
 from .common import InfoExtractor
 from ..compat import compat_str
 from ..utils import (
-    ExtractorError,
     int_or_none,
     js_to_json,
     str_or_none,
@@ -32,7 +30,7 @@ class LineTVIE(InfoExtractor):
     }]
 
     def _real_extract(self, url):
-        series_id, segment = re.match(self._VALID_URL, url).groups()
+        series_id, segment = self._match_valid_url(url).groups()
         video_id = '%s_%s' % (series_id, segment)
 
         webpage = self._download_webpage(url, video_id)
@@ -77,7 +75,7 @@ class LineTVIE(InfoExtractor):
 
         self._sort_formats(formats)
 
-        if not formats[0].get('width'):
+        if formats and not formats[0].get('width'):
             formats[0]['vcodec'] = 'none'
 
         title = self._og_search_title(webpage)
@@ -155,7 +153,7 @@ class LineLiveIE(LineLiveBaseIE):
     }]
 
     def _real_extract(self, url):
-        channel_id, broadcast_id = re.match(self._VALID_URL, url).groups()
+        channel_id, broadcast_id = self._match_valid_url(url).groups()
         broadcast = self._download_json(
             self._API_BASE_URL + '%s/broadcast/%s' % (channel_id, broadcast_id),
             broadcast_id)
@@ -183,7 +181,7 @@ class LineLiveIE(LineLiveBaseIE):
         if not formats:
             archive_status = item.get('archiveStatus')
             if archive_status != 'ARCHIVED':
-                raise ExtractorError('this video has been ' + archive_status.lower(), expected=True)
+                self.raise_no_formats('this video has been ' + archive_status.lower(), expected=True)
         self._sort_formats(formats)
         info['formats'] = formats
         return info

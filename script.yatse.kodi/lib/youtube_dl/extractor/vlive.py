@@ -72,6 +72,13 @@ class VLiveIE(VLiveBaseIE):
         # works only with gcc=KR
         'url': 'https://www.vlive.tv/video/225019',
         'only_matching': True,
+    }, {
+        'url': 'https://www.vlive.tv/video/223906',
+        'info_dict': {
+            'id': '58',
+            'title': 'RUN BTS!'
+        },
+        'playlist_mincount': 120
     }]
 
     def _real_initialize(self):
@@ -105,10 +112,12 @@ class VLiveIE(VLiveBaseIE):
         if not is_logged_in():
             raise ExtractorError('Unable to log in', expected=True)
 
-    def _call_api(self, path_template, video_id, fields=None):
+    def _call_api(self, path_template, video_id, fields=None, limit=None):
         query = {'appId': self._APP_ID, 'gcc': 'KR', 'platformType': 'PC'}
         if fields:
             query['fields'] = fields
+        if limit:
+            query['limit'] = limit
         try:
             return self._download_json(
                 'https://www.vlive.tv/globalv-web/vam-web/' + path_template % video_id, video_id,
@@ -124,10 +133,34 @@ class VLiveIE(VLiveBaseIE):
 
         post = self._call_api(
             'post/v1.0/officialVideoPost-%s', video_id,
-            'author{nickname},channel{channelCode,channelName},officialVideo{commentCount,exposeStatus,likeCount,playCount,playTime,status,title,type,vodId}')
+            'author{nickname},channel{channelCode,channelName},officialVideo{commentCount,exposeStatus,likeCount,playCount,playTime,status,title,type,vodId},playlist{playlistSeq,totalCount,name}')
 
-        video = post['officialVideo']
+        playlist = post.get('playlist')
+        if not playlist or self.get_param('noplaylist'):
+            if playlist:
+                self.to_screen(
+                    'Downloading just video %s because of --no-playlist'
+                    % video_id)
 
+            video = post['officialVideo']
+            return self._get_vlive_info(post, video, video_id)
+        else:
+            playlist_name = playlist.get('name')
+            playlist_id = str_or_none(playlist.get('playlistSeq'))
+            playlist_count = str_or_none(playlist.get('totalCount'))
+
+            playlist = self._call_api(
+                'playlist/v1.0/playlist-%s/posts', playlist_id, 'data', limit=playlist_count)
+
+            entries = []
+            for video_data in playlist['data']:
+                video = video_data.get('officialVideo')
+                video_id = str_or_none(video.get('videoSeq'))
+                entries.append(self._get_vlive_info(video_data, video, video_id))
+
+            return self.playlist_result(entries, playlist_id, playlist_name)
+
+    def _get_vlive_info(self, post, video, video_id):
         def get_common_fields():
             channel = post.get('channel') or {}
             return {
@@ -145,9 +178,15 @@ class VLiveIE(VLiveBaseIE):
         if video_type == 'VOD':
             inkey = self._call_api('video/v1.0/vod/%s/inkey', video_id)['inkey']
             vod_id = video['vodId']
-            return merge_dicts(
+            info_dict = merge_dicts(
                 get_common_fields(),
                 self._extract_video_info(video_id, vod_id, inkey))
+            thumbnail = video.get('thumb')
+            if thumbnail:
+                if not info_dict.get('thumbnails') and info_dict.get('thumbnail'):
+                    info_dict['thumbnails'] = [{'url': info_dict.pop('thumbnail')}]
+                info_dict.setdefault('thumbnails', []).append({'url': thumbnail, 'preference': 1})
+            return info_dict
         elif video_type == 'LIVE':
             status = video.get('status')
             if status == 'ON_AIR':
@@ -316,13 +355,29 @@ class VLiveChannelIE(VLiveBaseIE):
 
             for video in videos:
                 video_id = video.get('videoSeq')
-                if not video_id:
+                video_type = video.get('videoType')
+
+                if not video_id or not video_type:
                     continue
                 video_id = compat_str(video_id)
-                entries.append(
-                    self.url_result(
-                        'http://www.vlive.tv/video/%s' % video_id,
-                        ie=VLiveIE.ie_key(), video_id=video_id))
+
+                if video_type in ('PLAYLIST'):
+                    first_video_id = try_get(
+                        video,
+                        lambda x: x['videoPlaylist']['videoList'][0]['videoSeq'], int)
+
+                    if not first_video_id:
+                        continue
+
+                    entries.append(
+                        self.url_result(
+                            'http://www.vlive.tv/video/%s' % first_video_id,
+                            ie=VLiveIE.ie_key(), video_id=first_video_id))
+                else:
+                    entries.append(
+                        self.url_result(
+                            'http://www.vlive.tv/video/%s' % video_id,
+                            ie=VLiveIE.ie_key(), video_id=video_id))
 
         return self.playlist_result(
             entries, channel_code, channel_name)

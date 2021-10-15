@@ -9,6 +9,8 @@ from ..utils import (
     int_or_none,
     determine_ext,
     parse_age_limit,
+    remove_start,
+    remove_end,
     try_get,
     urlencode_postdata,
     ExtractorError,
@@ -48,15 +50,15 @@ class GoIE(AdobePassIE):
     }
     _VALID_URL = r'''(?x)
                     https?://
-                        (?:
-                            (?:(?P<sub_domain>%s)\.)?go|
-                            (?P<sub_domain_2>abc|freeform|disneynow|fxnow\.fxnetworks)
+                        (?P<sub_domain>
+                            (?:%s\.)?go|fxnow\.fxnetworks|
+                            (?:www\.)?(?:abc|freeform|disneynow)
                         )\.com/
                         (?:
                             (?:[^/]+/)*(?P<id>[Vv][Dd][Kk][Aa]\w+)|
                             (?:[^/]+/)*(?P<display_id>[^/?\#]+)
                         )
-                    ''' % '|'.join(list(_SITE_INFO.keys()))
+                    ''' % r'\.|'.join(list(_SITE_INFO.keys()))
     _TESTS = [{
         'url': 'http://abc.go.com/shows/designated-survivor/video/most-recent/VDKA3807643',
         'info_dict': {
@@ -147,6 +149,9 @@ class GoIE(AdobePassIE):
     }, {
         'url': 'https://disneynow.com/shows/minnies-bow-toons/video/happy-campers/vdka4872013',
         'only_matching': True,
+    }, {
+        'url': 'https://www.freeform.com/shows/cruel-summer/episode-guide/season-01/01-happy-birthday-jeanette-turner',
+        'only_matching': True,
     }]
 
     def _extract_videos(self, brand, video_id='-1', show_id='-1'):
@@ -156,8 +161,8 @@ class GoIE(AdobePassIE):
             display_id)['video']
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
-        sub_domain = mobj.group('sub_domain') or mobj.group('sub_domain_2')
+        mobj = self._match_valid_url(url)
+        sub_domain = remove_start(remove_end(mobj.group('sub_domain') or '', '.go'), 'www.')
         video_id, display_id = mobj.group('id', 'display_id')
         site_info = self._SITE_INFO.get(sub_domain, {})
         brand = site_info.get('brand')
@@ -262,7 +267,7 @@ class GoIE(AdobePassIE):
                 if re.search(r'(?:/mp4/source/|_source\.mp4)', asset_url):
                     f.update({
                         'format_id': ('%s-' % format_id if format_id else '') + 'SOURCE',
-                        'preference': 1,
+                        'quality': 1,
                     })
                 else:
                     mobj = re.search(r'/(\d+)x(\d+)/', asset_url)

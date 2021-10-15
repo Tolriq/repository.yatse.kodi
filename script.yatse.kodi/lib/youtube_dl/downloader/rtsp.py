@@ -24,7 +24,7 @@ class RtspFD(FileDownloader):
             args = [
                 'mpv', '-really-quiet', '--vo=null', '--stream-dump=' + tmpfilename, url]
         else:
-            self.report_error('MMS or RTSP download detected but neither "mplayer" nor "mpv" could be run. Please install any.')
+            self.report_error('MMS or RTSP download detected but neither "mplayer" nor "mpv" could be run. Please install one')
             return False
 
         self._debug_cmd(args)
@@ -39,7 +39,7 @@ class RtspFD(FileDownloader):
                 'total_bytes': fsize,
                 'filename': filename,
                 'status': 'finished',
-            })
+            }, info_dict)
             return True
         else:
             self.to_stderr('\n')

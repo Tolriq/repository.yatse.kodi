@@ -14,6 +14,7 @@ from ..utils import (
     fix_xml_ampersands,
     float_or_none,
     HEADRequest,
+    int_or_none,
     RegexNotFoundError,
     sanitized_Request,
     strip_or_none,
@@ -43,7 +44,7 @@ class MTVServicesInfoExtractor(InfoExtractor):
         # Remove the templates, like &device={device}
         return re.sub(r'&[^=]*?={.*?}(?=(&|$))', '', url)
 
-    def _get_feed_url(self, uri):
+    def _get_feed_url(self, uri, url=None):
         return self._FEED_URL
 
     def _get_thumbnail_url(self, uri, itemdoc):
@@ -176,6 +177,22 @@ class MTVServicesInfoExtractor(InfoExtractor):
             raise ExtractorError('Could not find video title')
         title = title.strip()
 
+        series = find_xpath_attr(
+            itemdoc, './/{http://search.yahoo.com/mrss/}category',
+            'scheme', 'urn:mtvn:franchise')
+        season = find_xpath_attr(
+            itemdoc, './/{http://search.yahoo.com/mrss/}category',
+            'scheme', 'urn:mtvn:seasonN')
+        episode = find_xpath_attr(
+            itemdoc, './/{http://search.yahoo.com/mrss/}category',
+            'scheme', 'urn:mtvn:episodeN')
+        series = series.text if series is not None else None
+        season = season.text if season is not None else None
+        episode = episode.text if episode is not None else None
+        if season and episode:
+            # episode number includes season, so remove it
+            episode = re.sub(r'^%s' % season, '', episode)
+
         # This a short id that's used in the webpage urls
         mtvn_id = None
         mtvn_id_node = find_xpath_attr(itemdoc, './/{http://search.yahoo.com/mrss/}category',
@@ -201,6 +218,9 @@ class MTVServicesInfoExtractor(InfoExtractor):
             'description': description,
             'duration': float_or_none(content_el.attrib.get('duration')),
             'timestamp': timestamp,
+            'series': series,
+            'season_number': int_or_none(season),
+            'episode_number': int_or_none(episode),
         }
 
     def _get_feed_query(self, uri):
@@ -209,9 +229,9 @@ class MTVServicesInfoExtractor(InfoExtractor):
             data['lang'] = self._LANG
         return data
 
-    def _get_videos_info(self, uri, use_hls=True):
+    def _get_videos_info(self, uri, use_hls=True, url=None):
         video_id = self._id_from_uri(uri)
-        feed_url = self._get_feed_url(uri)
+        feed_url = self._get_feed_url(uri, url)
         info_url = update_url_query(feed_url, self._get_feed_query(uri))
         return self._get_videos_info_from_url(info_url, video_id, use_hls)
 
@@ -229,6 +249,7 @@ class MTVServicesInfoExtractor(InfoExtractor):
             if info:
                 entries.append(info)
 
+        # TODO: should be multi-video
         return self.playlist_result(
             entries, playlist_title=title, playlist_description=description)
 
@@ -292,13 +313,17 @@ class MTVServicesInfoExtractor(InfoExtractor):
             video_player = self._extract_child_with_type(ab_testing or main_container, 'VideoPlayer')
             mgid = video_player['props']['media']['video']['config']['uri']
 
+        if not mgid:
+            mgid = self._search_regex(
+                r'"media":{"video":{"config":{"uri":"(mgid:.*?)"', webpage, 'mgid', default=None)
+
         return mgid
 
     def _real_extract(self, url):
         title = url_basename(url)
         webpage = self._download_webpage(url, title)
         mgid = self._extract_mgid(webpage)
-        videos_info = self._get_videos_info(mgid)
+        videos_info = self._get_videos_info(mgid, url=url)
         return videos_info
 
 
@@ -327,14 +352,14 @@ class MTVServicesEmbeddedIE(MTVServicesInfoExtractor):
         if mobj:
             return mobj.group('url')
 
-    def _get_feed_url(self, uri):
+    def _get_feed_url(self, uri, url=None):
         video_id = self._id_from_uri(uri)
         config = self._download_json(
             'http://media.mtvnservices.com/pmt/e1/access/index.html?uri=%s&configtype=edge' % uri, video_id)
         return self._remove_template_parameter(config['feedWithQueryParams'])
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         mgid = mobj.group('mgid')
         return self._get_videos_info(mgid)
 
@@ -416,7 +441,7 @@ class MTVVideoIE(MTVServicesInfoExtractor):
         return 'http://mtv.mtvnimages.com/uri/' + uri
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         video_id = mobj.group('videoid')
         uri = mobj.groupdict().get('mgid')
         if uri is None:
@@ -486,3 +511,152 @@ class MTVDEIE(MTVServicesInfoExtractor):
             'arcEp': 'mtv.de',
             'mgid': uri,
         }
+
+
+class MTVItaliaIE(MTVServicesInfoExtractor):
+    IE_NAME = 'mtv.it'
+    _VALID_URL = r'https?://(?:www\.)?mtv\.it/(?:episodi|video|musica)/(?P<id>[0-9a-z]+)'
+    _TESTS = [{
+        'url': 'http://www.mtv.it/episodi/24bqab/mario-una-serie-di-maccio-capatonda-cavoli-amario-episodio-completo-S1-E1',
+        'info_dict': {
+            'id': '0f0fc78e-45fc-4cce-8f24-971c25477530',
+            'ext': 'mp4',
+            'title': 'Cavoli amario (episodio completo)',
+            'description': 'md5:4962bccea8fed5b7c03b295ae1340660',
+            'series': 'Mario - Una Serie Di Maccio Capatonda',
+            'season_number': 1,
+            'episode_number': 1,
+        },
+        'params': {
+            'skip_download': True,
+        },
+    }]
+    _GEO_COUNTRIES = ['IT']
+    _FEED_URL = 'http://feeds.mtvnservices.com/od/feed/intl-mrss-player-feed'
+
+    def _get_feed_query(self, uri):
+        return {
+            'arcEp': 'mtv.it',
+            'mgid': uri,
+        }
+
+
+class MTVItaliaProgrammaIE(MTVItaliaIE):
+    IE_NAME = 'mtv.it:programma'
+    _VALID_URL = r'https?://(?:www\.)?mtv\.it/(?:programmi|playlist)/(?P<id>[0-9a-z]+)'
+    _TESTS = [{
+        # program page: general
+        'url': 'http://www.mtv.it/programmi/s2rppv/mario-una-serie-di-maccio-capatonda',
+        'info_dict': {
+            'id': 'a6f155bc-8220-4640-aa43-9b95f64ffa3d',
+            'title': 'Mario - Una Serie Di Maccio Capatonda',
+            'description': 'md5:72fbffe1f77ccf4e90757dd4e3216153',
+        },
+        'playlist_count': 2,
+        'params': {
+            'skip_download': True,
+        },
+    }, {
+        # program page: specific season
+        'url': 'http://www.mtv.it/programmi/d9ncjf/mario-una-serie-di-maccio-capatonda-S2',
+        'info_dict': {
+            'id': '4deeb5d8-f272-490c-bde2-ff8d261c6dd1',
+            'title': 'Mario - Una Serie Di Maccio Capatonda - Stagione 2',
+        },
+        'playlist_count': 34,
+        'params': {
+            'skip_download': True,
+        },
+    }, {
+        # playlist page + redirect
+        'url': 'http://www.mtv.it/playlist/sexy-videos/ilctal',
+        'info_dict': {
+            'id': 'dee8f9ee-756d-493b-bf37-16d1d2783359',
+            'title': 'Sexy Videos',
+        },
+        'playlist_mincount': 145,
+        'params': {
+            'skip_download': True,
+        },
+    }]
+    _GEO_COUNTRIES = ['IT']
+    _FEED_URL = 'http://www.mtv.it/feeds/triforce/manifest/v8'
+
+    def _get_entries(self, title, url):
+        while True:
+            pg = self._search_regex(r'/(\d+)$', url, 'entries', '1')
+            entries = self._download_json(url, title, 'page %s' % pg)
+            url = try_get(
+                entries, lambda x: x['result']['nextPageURL'], compat_str)
+            entries = try_get(
+                entries, (
+                    lambda x: x['result']['data']['items'],
+                    lambda x: x['result']['data']['seasons']),
+                list)
+            for entry in entries or []:
+                if entry.get('canonicalURL'):
+                    yield self.url_result(entry['canonicalURL'])
+            if not url:
+                break
+
+    def _real_extract(self, url):
+        query = {'url': url}
+        info_url = update_url_query(self._FEED_URL, query)
+        video_id = self._match_id(url)
+        info = self._download_json(info_url, video_id).get('manifest')
+
+        redirect = try_get(
+            info, lambda x: x['newLocation']['url'], compat_str)
+        if redirect:
+            return self.url_result(redirect)
+
+        title = info.get('title')
+        video_id = try_get(
+            info, lambda x: x['reporting']['itemId'], compat_str)
+        parent_id = try_get(
+            info, lambda x: x['reporting']['parentId'], compat_str)
+
+        playlist_url = current_url = None
+        for z in (info.get('zones') or {}).values():
+            if z.get('moduleName') in ('INTL_M304', 'INTL_M209'):
+                info_url = z.get('feed')
+            if z.get('moduleName') in ('INTL_M308', 'INTL_M317'):
+                playlist_url = playlist_url or z.get('feed')
+            if z.get('moduleName') in ('INTL_M300',):
+                current_url = current_url or z.get('feed')
+
+        if not info_url:
+            raise ExtractorError('No info found')
+
+        if video_id == parent_id:
+            video_id = self._search_regex(
+                r'([^\/]+)/[^\/]+$', info_url, 'video_id')
+
+        info = self._download_json(info_url, video_id, 'Show infos')
+        info = try_get(info, lambda x: x['result']['data'], dict)
+        title = title or try_get(
+            info, (
+                lambda x: x['title'],
+                lambda x: x['headline']),
+            compat_str)
+        description = try_get(info, lambda x: x['content'], compat_str)
+
+        if current_url:
+            season = try_get(
+                self._download_json(playlist_url, video_id, 'Seasons info'),
+                lambda x: x['result']['data'], dict)
+            current = try_get(
+                season, lambda x: x['currentSeason'], compat_str)
+            seasons = try_get(
+                season, lambda x: x['seasons'], list) or []
+
+            if current in [s.get('eTitle') for s in seasons]:
+                playlist_url = current_url
+
+        title = re.sub(
+            r'[-|]\s*(?:mtv\s*italia|programma|playlist)',
+            '', title, flags=re.IGNORECASE).strip()
+
+        return self.playlist_result(
+            self._get_entries(title, playlist_url),
+            video_id, title, description)

@@ -1,7 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-import re
 
 from .common import InfoExtractor
 from ..compat import compat_parse_qs
@@ -23,7 +22,7 @@ class BokeCCBaseIE(InfoExtractor):
         formats = [{
             'format_id': format_id,
             'url': quality.find('./copy').attrib['playurl'],
-            'preference': int(quality.attrib['value']),
+            'quality': int(quality.attrib['value']),
         } for quality in info_xml.findall('./video/quality')]
 
         self._sort_formats(formats)
@@ -45,7 +44,7 @@ class BokeCCIE(BokeCCBaseIE):
     }]
 
     def _real_extract(self, url):
-        qs = compat_parse_qs(re.match(self._VALID_URL, url).group('query'))
+        qs = compat_parse_qs(self._match_valid_url(url).group('query'))
         if not qs.get('vid') or not qs.get('uid'):
             raise ExtractorError('Invalid URL', expected=True)
 

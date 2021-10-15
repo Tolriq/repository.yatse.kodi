@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import json
 import random
-import re
 
 from .common import InfoExtractor
 from ..compat import (
@@ -38,8 +37,8 @@ class LinuxAcademyIE(InfoExtractor):
             'ext': 'mp4',
             'title': 'What Is Data Science',
             'description': 'md5:c574a3c20607144fb36cb65bdde76c99',
-            'timestamp': 1607387907,
-            'upload_date': '20201208',
+            'timestamp': int,  # The timestamp and upload date changes
+            'upload_date': r're:\d+',
             'duration': 304,
         },
         'params': {
@@ -58,6 +57,16 @@ class LinuxAcademyIE(InfoExtractor):
             'duration': 28835,
         },
         'playlist_count': 41,
+        'skip': 'Requires Linux Academy account credentials',
+    }, {
+        'url': 'https://linuxacademy.com/cp/modules/view/id/39',
+        'info_dict': {
+            'id': '39',
+            'title': 'Red Hat Certified Systems Administrator - RHCSA (EX200) Exam Prep  (legacy)',
+            'description': 'md5:0f1d3369e90c3fb14a79813b863c902f',
+            'duration': 89280,
+        },
+        'playlist_count': 73,
         'skip': 'Requires Linux Academy account credentials',
     }]
 
@@ -102,7 +111,7 @@ class LinuxAcademyIE(InfoExtractor):
             'client_id': self._CLIENT_ID,
             'redirect_uri': self._ORIGIN_URL,
             'tenant': 'lacausers',
-            'connection': 'Username-Password-Authentication',
+            'connection': 'Username-Password-ACG-Proxy',
             'username': username,
             'password': password,
             'sso': 'true',
@@ -152,7 +161,7 @@ class LinuxAcademyIE(InfoExtractor):
             % access_token, None, 'Downloading token validation page')
 
     def _real_extract(self, url):
-        mobj = re.match(self._VALID_URL, url)
+        mobj = self._match_valid_url(url)
         chapter_id, lecture_id, course_id = mobj.group('chapter_id', 'lesson_id', 'course_id')
         item_id = course_id if course_id else '%s-%s' % (chapter_id, lecture_id)
 
@@ -162,7 +171,7 @@ class LinuxAcademyIE(InfoExtractor):
         if course_id:
             module = self._parse_json(
                 self._search_regex(
-                    r'window\.module\s*=\s*({.+?})\s*;', webpage, 'module'),
+                    r'window\.module\s*=\s*({(?:(?!};)[^"]|"([^"]|\\")*")+})\s*;', webpage, 'module'),
                 item_id)
             entries = []
             chapter_number = None
