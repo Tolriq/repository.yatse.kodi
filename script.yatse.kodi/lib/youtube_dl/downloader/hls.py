@@ -77,6 +77,15 @@ class HlsFD(FragmentFD):
                 message = ('The stream has AES-128 encryption and neither ffmpeg nor pycryptodomex are available; '
                            'Decryption will be performed natively, but will be extremely slow')
         if not can_download:
+            has_drm = re.search('|'.join([
+                r'#EXT-X-FAXS-CM:',  # Adobe Flash Access
+                r'#EXT-X-(?:SESSION-)?KEY:.*?URI="skd://',  # Apple FairPlay
+            ]), s)
+            if has_drm and not self.params.get('allow_unplayable_formats'):
+                self.report_error(
+                    'This video is DRM protected; Try selecting another format with --format or '
+                    'add --check-formats to automatically fallback to the next best format')
+                return False
             message = message or 'Unsupported features have been detected'
             fd = FFmpegFD(self.ydl, self.params)
             self.report_warning(f'{message}; extraction will be delegated to {fd.get_basename()}')
@@ -245,13 +254,12 @@ class HlsFD(FragmentFD):
             fragments = [fragments[0] if fragments else None]
 
         if real_downloader:
-            info_copy = info_dict.copy()
-            info_copy['fragments'] = fragments
+            info_dict['fragments'] = fragments
             fd = real_downloader(self.ydl, self.params)
             # TODO: Make progress updates work without hooking twice
             # for ph in self._progress_hooks:
             #     fd.add_progress_hook(ph)
-            return fd.real_download(filename, info_copy)
+            return fd.real_download(filename, info_dict)
 
         if is_webvtt:
             def pack_fragment(frag_content, frag_index):

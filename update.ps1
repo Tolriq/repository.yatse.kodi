@@ -12,7 +12,10 @@ Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/archive/master.zip" -Ou
 
 unzip "$PSScriptRoot\.temp\ydl.zip" "$PSScriptRoot\.temp"
 
-Copy-Item -Force -recurse "$PSScriptRoot\.temp\yt-dlp-master\yt_dlp\*.*" -Destination "$PSScriptRoot\script.yatse.kodi\lib\youtube_dl\"
+Remove-Item -Force  -recurse "$PSScriptRoot\script.yatse.kodi\lib\youtube_dl"
+Copy-Item -Force -recurse "$PSScriptRoot\.temp\yt-dlp-master\yt_dlp\" -Destination "$PSScriptRoot\script.yatse.kodi\lib\"
+Move-Item "$PSScriptRoot\script.yatse.kodi\lib\yt_dlp" "$PSScriptRoot\script.yatse.kodi\lib\youtube_dl"
+
 
 $file = "version.txt"
 $fileVersion = (Get-Content $file | Select -First 1).Split(".")
@@ -22,8 +25,8 @@ $fileVersion = (Get-Content $file | Select -First 1)
 
 ((Get-Content -path "script.yatse.kodi\addon.xml.template" -Raw) -replace '{Version}',$fileVersion) | Set-Content -Path "script.yatse.kodi\addon.xml"
 
-py repo_generator.py
+#py repo_generator.py
 py repo_generator_matrix.py
 
 git add -A
-git commit -m "Sync youtubeDL"
+git commit -m "Sync yt-dlp"
