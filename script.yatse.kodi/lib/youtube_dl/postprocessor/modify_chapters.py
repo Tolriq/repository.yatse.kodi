@@ -3,17 +3,9 @@ import heapq
 import os
 
 from .common import PostProcessor
-from .ffmpeg import (
-    FFmpegPostProcessor,
-    FFmpegSubtitlesConvertorPP
-)
+from .ffmpeg import FFmpegPostProcessor, FFmpegSubtitlesConvertorPP
 from .sponsorblock import SponsorBlockPP
-from ..utils import (
-    orderedSet,
-    PostProcessingError,
-    prepend_extension,
-)
-
+from ..utils import PostProcessingError, orderedSet, prepend_extension
 
 _TINY_CHAPTER_DURATION = 1
 DEFAULT_SPONSORBLOCK_CHAPTER_TITLE = '[SponsorBlock]: %(category_names)l'
@@ -68,9 +60,11 @@ class ModifyChaptersPP(FFmpegPostProcessor):
         # Renaming should only happen after all files are processed
         files_to_remove = []
         for in_file, out_file in in_out_files:
+            mtime = os.stat(in_file).st_mtime
             uncut_file = prepend_extension(in_file, 'uncut')
             os.replace(in_file, uncut_file)
             os.replace(out_file, in_file)
+            self.try_utime(in_file, mtime, mtime)
             files_to_remove.append(uncut_file)
 
         return files_to_remove, info

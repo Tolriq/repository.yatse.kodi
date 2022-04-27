@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 import itertools
 import random
 import string
@@ -14,6 +11,9 @@ from ..compat import (
 )
 from ..utils import (
     ExtractorError,
+    HEADRequest,
+    UnsupportedError,
+    get_first,
     int_or_none,
     join_nonempty,
     LazyList,
@@ -261,8 +261,8 @@ class TikTokBaseIE(InfoExtractor):
 
         return {
             'id': aweme_id,
-            'title': aweme_detail['desc'],
-            'description': aweme_detail['desc'],
+            'title': aweme_detail.get('desc'),
+            'description': aweme_detail.get('desc'),
             'view_count': int_or_none(stats_info.get('play_count')),
             'like_count': int_or_none(stats_info.get('digg_count')),
             'repost_count': int_or_none(stats_info.get('share_count')),
@@ -385,6 +385,9 @@ class TikTokIE(TikTokBaseIE):
             'like_count': int,
             'repost_count': int,
             'comment_count': int,
+            'artist': 'Ysrbeats',
+            'album': 'Lehanga',
+            'track': 'Lehanga',
         }
     }, {
         'url': 'https://www.tiktok.com/@patroxofficial/video/6742501081818877190?langCountry=en',
@@ -408,6 +411,8 @@ class TikTokIE(TikTokBaseIE):
             'like_count': int,
             'repost_count': int,
             'comment_count': int,
+            'artist': 'Evan Todd, Jessica Keenan Wynn, Alice Lee, Barrett Wilbert Weed & Jon Eidson',
+            'track': 'Big Fun',
         }
     }, {
         # Banned audio, only available on the app
@@ -455,6 +460,30 @@ class TikTokIE(TikTokBaseIE):
             'comment_count': int,
         },
         'expected_warnings': ['Video not available']
+    }, {
+        # Video without title and description
+        'url': 'https://www.tiktok.com/@pokemonlife22/video/7059698374567611694',
+        'info_dict': {
+            'id': '7059698374567611694',
+            'ext': 'mp4',
+            'title': 'tiktok video #7059698374567611694',
+            'description': '',
+            'uploader': 'pokemonlife22',
+            'creator': 'Pokemon',
+            'uploader_id': '6820838815978423302',
+            'uploader_url': 'https://www.tiktok.com/@MS4wLjABAAAA0tF1nBwQVVMyrGu3CqttkNgM68Do1OXUFuCY0CRQk8fEtSVDj89HqoqvbSTmUP2W',
+            'track': 'original sound',
+            'timestamp': 1643714123,
+            'duration': 6,
+            'thumbnail': r're:^https?://[\w\/\.\-]+(~[\w\-]+\.image)?',
+            'upload_date': '20220201',
+            'artist': 'Pokemon',
+            'view_count': int,
+            'like_count': int,
+            'repost_count': int,
+            'comment_count': int,
+        },
+        'expected_warnings': ['Video not available', 'Creating a generic title']
     }, {
         # Auto-captions available
         'url': 'https://www.tiktok.com/@hankgreen1/video/7047596209028074758',
@@ -516,6 +545,15 @@ class TikTokUserIE(TikTokBaseIE):
         'info_dict': {
             'id': '6935371178089399301',
             'title': 'corgibobaa',
+            'thumbnail': r're:https://.+_1080x1080\.webp'
+        },
+        'expected_warnings': ['Retrying']
+    }, {
+        'url': 'https://www.tiktok.com/@6820838815978423302',
+        'playlist_mincount': 5,
+        'info_dict': {
+            'id': '6820838815978423302',
+            'title': '6820838815978423302',
             'thumbnail': r're:https://.+_1080x1080\.webp'
         },
         'expected_warnings': ['Retrying']
@@ -591,7 +629,7 @@ class TikTokUserIE(TikTokBaseIE):
         webpage = self._download_webpage(url, user_name, headers={
             'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
         })
-        user_id = self._html_search_regex(r'snssdk\d*://user/profile/(\d+)', webpage, 'user ID')
+        user_id = self._html_search_regex(r'snssdk\d*://user/profile/(\d+)', webpage, 'user ID', default=None) or user_name
 
         videos = LazyList(self._video_entries_api(webpage, user_id, user_name))
         thumbnail = traverse_obj(videos, (0, 'author', 'avatar_larger', 'url_list', 0))
@@ -815,5 +853,43 @@ class DouyinIE(TikTokIE):
 
         render_data = self._parse_json(
             render_data_json, video_id, transform_source=compat_urllib_parse_unquote)
-        return self._parse_aweme_video_web(
-            traverse_obj(render_data, (..., 'aweme', 'detail'), get_all=False), url)
+        return self._parse_aweme_video_web(get_first(render_data, ('aweme', 'detail')), url)
+
+
+class TikTokVMIE(InfoExtractor):
+    _VALID_URL = r'https?://(?:vm|vt)\.tiktok\.com/(?P<id>\w+)'
+    IE_NAME = 'vm.tiktok'
+
+    _TESTS = [{
+        'url': 'https://vm.tiktok.com/ZSe4FqkKd',
+        'info_dict': {
+            'id': '7023491746608712966',
+            'ext': 'mp4',
+            'title': 'md5:5607564db90271abbbf8294cca77eddd',
+            'description': 'md5:5607564db90271abbbf8294cca77eddd',
+            'duration': 11,
+            'upload_date': '20211026',
+            'uploader_id': '7007385080558846981',
+            'creator': 'Memes',
+            'artist': 'Memes',
+            'track': 'original sound',
+            'uploader': 'susmandem',
+            'timestamp': 1635284105,
+            'thumbnail': r're:https://.+\.webp.*',
+            'like_count': int,
+            'view_count': int,
+            'comment_count': int,
+            'repost_count': int,
+            'uploader_url': 'https://www.tiktok.com/@MS4wLjABAAAAXcNoOEOxVyBzuII_E--T0MeCrLP0ay1Sm6x_n3dluiWEoWZD0VlQOytwad4W0i0n',
+        }
+    }, {
+        'url': 'https://vt.tiktok.com/ZSe4FqkKd',
+        'only_matching': True,
+    }]
+
+    def _real_extract(self, url):
+        new_url = self._request_webpage(
+            HEADRequest(url), self._match_id(url), headers={'User-Agent': 'facebookexternalhit/1.1'}).geturl()
+        if self.suitable(new_url):  # Prevent infinite loop in case redirect fails
+            raise UnsupportedError(new_url)
+        return self.url_result(new_url)
