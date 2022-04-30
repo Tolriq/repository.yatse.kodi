@@ -27,7 +27,7 @@
 	</extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Matrix helper script" version="92.5.7" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Matrix helper script" version="92.5.8" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="plugin.video.youtube"/>

@@ -471,7 +471,8 @@ def create_parser():
             '!is_live --match-filter "like_count>?100 & description~=\'(?i)\\bcats \\& dogs\\b\'" '
             'matches only videos that are not live OR those that have a like count more than 100 '
             '(or the like field is not available) and also has a description '
-            'that contains the phrase "cats & dogs" (ignoring case)'))
+            'that contains the phrase "cats & dogs" (ignoring case). '
+            'Use "--match-filter -" to interactively ask whether to download each video'))
     selection.add_option(
         '--no-match-filter',
         metavar='FILTER', dest='match_filter', action='store_const', const=None,
@@ -813,11 +814,11 @@ def create_parser():
         }, help=(
             'Name or path of the external downloader to use (optionally) prefixed by '
             'the protocols (http, ftp, m3u8, dash, rstp, rtmp, mms) to use it for. '
-            'Currently supports native, %s (Recommended: aria2c). '
+            f'Currently supports native, {", ".join(list_external_downloaders())}. '
             'You can use this option multiple times to set different downloaders for different protocols. '
             'For example, --downloader aria2c --downloader "dash,m3u8:native" will use '
             'aria2c for http/ftp downloads, and the native downloader for dash/m3u8 downloads '
-            '(Alias: --external-downloader)' % ', '.join(list_external_downloaders())))
+            '(Alias: --external-downloader)'))
     downloader.add_option(
         '--downloader-args', '--external-downloader-args',
         metavar='NAME:ARGS', dest='external_downloader_args', default={}, type='str',

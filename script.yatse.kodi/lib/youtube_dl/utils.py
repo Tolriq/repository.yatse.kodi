@@ -245,6 +245,8 @@ DATE_FORMATS_MONTH_FIRST.extend([
 PACKED_CODES_RE = r"}\('(.+)',(\d+),(\d+),'([^']+)'\.split\('\|'\)"
 JSON_LD_RE = r'(?is)<script[^>]+type=(["\']?)application/ld\+json\1[^>]*>(?P<json_ld>.+?)</script>'
 
+NUMBER_RE = r'\d+(?:\.\d+)?'
+
 
 def preferredencoding():
     """Get preferred encoding.
@@ -1505,6 +1507,10 @@ class YoutubeDLCookieJar(compat_cookiejar.MozillaCookieJar):
                 try:
                     cf.write(prepare_line(line))
                 except compat_cookiejar.LoadError as e:
+                    if f'{line.strip()} '[0] in '[{"':
+                        raise compat_cookiejar.LoadError(
+                            'Cookies file must be Netscape formatted, not JSON. See  '
+                            'https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl')
                     write_string(f'WARNING: skipping cookie file entry due to {e}: {line!r}\n')
                     continue
         cf.seek(0)
@@ -1850,6 +1856,10 @@ def get_windows_version():
 def write_string(s, out=None, encoding=None):
     assert isinstance(s, str)
     out = out or sys.stderr
+
+    from .compat import WINDOWS_VT_MODE  # Must be imported locally
+    if WINDOWS_VT_MODE:
+        s = s.replace('\n', ' \n')
 
     if 'b' in getattr(out, 'mode', ''):
         byt = s.encode(encoding or preferredencoding(), 'ignore')
@@ -3403,11 +3413,15 @@ def match_str(filter_str, dct, incomplete=False):
 def match_filter_func(filters):
     if not filters:
         return None
-    filters = variadic(filters)
+    filters = set(variadic(filters))
 
-    def _match_func(info_dict, *args, **kwargs):
-        if any(match_str(f, info_dict, *args, **kwargs) for f in filters):
-            return None
+    interactive = '-' in filters
+    if interactive:
+        filters.remove('-')
+
+    def _match_func(info_dict, incomplete=False):
+        if not filters or any(match_str(f, info_dict, incomplete) for f in filters):
+            return NO_DEFAULT if interactive and not incomplete else None
         else:
             video_title = info_dict.get('title') or info_dict.get('id') or 'video'
             filter_str = ') | ('.join(map(str.strip, filters))
@@ -3419,7 +3433,7 @@ def parse_dfxp_time_expr(time_expr):
     if not time_expr:
         return
 
-    mobj = re.match(r'^(?P<time_offset>\d+(?:\.\d+)?)s?$', time_expr)
+    mobj = re.match(rf'^(?P<time_offset>{NUMBER_RE})s?$', time_expr)
     if mobj:
         return float(mobj.group('time_offset'))
 

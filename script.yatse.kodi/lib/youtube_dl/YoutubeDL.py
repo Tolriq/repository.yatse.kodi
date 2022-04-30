@@ -62,6 +62,7 @@ from .utils import (
     DEFAULT_OUTTMPL,
     LINK_TEMPLATES,
     NO_DEFAULT,
+    NUMBER_RE,
     OUTTMPL_TYPES,
     POSTPROCESS_WHEN,
     STR_FORMAT_RE_TMPL,
@@ -409,10 +410,14 @@ class YoutubeDL:
     sleep_interval_subtitles: Number of seconds to sleep before each subtitle download
     listformats:       Print an overview of available video formats and exit.
     list_thumbnails:   Print a table of all thumbnails and exit.
-    match_filter:      A function that gets called with the info_dict of
-                       every video.
-                       If it returns a message, the video is ignored.
-                       If it returns None, the video is downloaded.
+    match_filter:      A function that gets called for every video with the signature
+                       (info_dict, *, incomplete: bool) -> Optional[str]
+                       For backward compatibility with youtube-dl, the signature
+                       (info_dict) -> Optional[str] is also allowed.
+                       - If it returns a message, the video is ignored.
+                       - If it returns None, the video is downloaded.
+                       - If it returns utils.NO_DEFAULT, the user is interactively
+                         asked whether to download the video.
                        match_filter_func in utils.py is one example for this.
     no_color:          Do not emit color codes in output.
     geo_bypass:        Bypass geographic restriction via faking X-Forwarded-For
@@ -878,6 +883,7 @@ class YoutubeDL:
     Styles = Namespace(
         HEADERS='yellow',
         EMPHASIS='light blue',
+        FILENAME='green',
         ID='green',
         DELIM='blue',
         ERROR='red',
@@ -954,7 +960,7 @@ class YoutubeDL:
             self.to_screen('Deleting existing file')
 
     def raise_no_formats(self, info, forced=False, *, msg=None):
-        has_drm = info.get('__has_drm')
+        has_drm = info.get('_has_drm')
         ignored, expected = self.params.get('ignore_no_formats_error'), bool(msg)
         msg = msg or has_drm and 'This video is DRM protected' or 'No video formats found!'
         if forced or not ignored:
@@ -1044,7 +1050,7 @@ class YoutubeDL:
             formatSeconds(info_dict['duration'], '-' if sanitize else ':')
             if info_dict.get('duration', None) is not None
             else None)
-        info_dict['autonumber'] = self.params.get('autonumber_start', 1) - 1 + self._num_downloads
+        info_dict['autonumber'] = int(self.params.get('autonumber_start', 1) - 1 + self._num_downloads)
         info_dict['video_autonumber'] = self._num_videos
         if info_dict.get('resolution') is None:
             info_dict['resolution'] = self.format_resolution(info_dict, default=None)
@@ -1052,7 +1058,7 @@ class YoutubeDL:
         # For fields playlist_index, playlist_autonumber and autonumber convert all occurrences
         # of %(field)s to %(field)0Nd for backward compatibility
         field_size_compat_map = {
-            'playlist_index': number_of_digits(info_dict.get('_last_playlist_index') or 0),
+            'playlist_index': number_of_digits(info_dict.get('__last_playlist_index') or 0),
             'playlist_autonumber': number_of_digits(info_dict.get('n_entries') or 0),
             'autonumber': self.params.get('autonumber_size') or 5,
         }
@@ -1066,18 +1072,18 @@ class YoutubeDL:
         # Field is of the form key1.key2...
         # where keys (except first) can be string, int or slice
         FIELD_RE = r'\w*(?:\.(?:\w+|{num}|{num}?(?::{num}?){{1,2}}))*'.format(num=r'(?:-?\d+)')
-        MATH_FIELD_RE = r'''(?:{field}|{num})'''.format(field=FIELD_RE, num=r'-?\d+(?:.\d+)?')
+        MATH_FIELD_RE = rf'(?:{FIELD_RE}|-?{NUMBER_RE})'
         MATH_OPERATORS_RE = r'(?:%s)' % '|'.join(map(re.escape, MATH_FUNCTIONS.keys()))
-        INTERNAL_FORMAT_RE = re.compile(r'''(?x)
+        INTERNAL_FORMAT_RE = re.compile(rf'''(?x)
             (?P<negate>-)?
-            (?P<fields>{field})
-            (?P<maths>(?:{math_op}{math_field})*)
+            (?P<fields>{FIELD_RE})
+            (?P<maths>(?:{MATH_OPERATORS_RE}{MATH_FIELD_RE})*)
             (?:>(?P<strf_format>.+?))?
             (?P<remaining>
                 (?P<alternate>(?<!\\),[^|&)]+)?
                 (?:&(?P<replacement>.*?))?
                 (?:\|(?P<default>.*?))?
-            )$'''.format(field=FIELD_RE, math_op=MATH_OPERATORS_RE, math_field=MATH_FIELD_RE))
+            )$''')
 
         def _traverse_infodict(k):
             k = k.split('.')
@@ -1303,7 +1309,17 @@ class YoutubeDL:
                 except TypeError:
                     # For backward compatibility
                     ret = None if incomplete else match_filter(info_dict)
-                if ret is not None:
+                if ret is NO_DEFAULT:
+                    while True:
+                        filename = self._format_screen(self.prepare_filename(info_dict), self.Styles.FILENAME)
+                        reply = input(self._format_screen(
+                            f'Download "{filename}"? (Y/n): ', self.Styles.EMPHASIS)).lower().strip()
+                        if reply in {'y', ''}:
+                            return None
+                        elif reply == 'n':
+                            return f'Skipping {video_title}'
+                    return True
+                elif ret is not None:
                     return ret
             return None
 
@@ -1764,7 +1780,7 @@ class YoutubeDL:
                 entry['__x_forwarded_for_ip'] = x_forwarded_for
             extra = {
                 'n_entries': n_entries,
-                '_last_playlist_index': max(playlistitems) if playlistitems else (playlistend or n_entries),
+                '__last_playlist_index': max(playlistitems) if playlistitems else (playlistend or n_entries),
                 'playlist_count': ie_result.get('playlist_count'),
                 'playlist_index': playlist_index,
                 'playlist_autonumber': i,
@@ -2321,7 +2337,7 @@ class YoutubeDL:
                                      video_id=info_dict['id'], ie=info_dict['extractor'])
             elif not info_dict.get('title'):
                 self.report_warning('Extractor failed to obtain "title". Creating a generic title instead')
-                info_dict['title'] = f'{info_dict["extractor"]} video #{info_dict["id"]}'
+                info_dict['title'] = f'{info_dict["extractor"].replace(":", "-")} video #{info_dict["id"]}'
 
         if info_dict.get('duration') is not None:
             info_dict['duration_string'] = formatSeconds(info_dict['duration'])
@@ -2436,10 +2452,11 @@ class YoutubeDL:
         else:
             formats = info_dict['formats']
 
-        info_dict['__has_drm'] = any(f.get('has_drm') for f in formats)
+        # or None ensures --clean-infojson removes it
+        info_dict['_has_drm'] = any(f.get('has_drm') for f in formats) or None
         if not self.params.get('allow_unplayable_formats'):
             formats = [f for f in formats if not f.get('has_drm')]
-            if info_dict['__has_drm'] and all(
+            if info_dict['_has_drm'] and all(
                     f.get('acodec') == f.get('vcodec') == 'none' for f in formats):
                 self.report_warning(
                     'This video is DRM protected and only images are available for download. '
@@ -3266,9 +3283,9 @@ class YoutubeDL:
         info_dict.setdefault('_type', 'video')
 
         if remove_private_keys:
-            reject = lambda k, v: v is None or (k.startswith('_') and k != '_type') or k in {
+            reject = lambda k, v: v is None or k.startswith('__') or k in {
                 'requested_downloads', 'requested_formats', 'requested_subtitles', 'requested_entries',
-                'entries', 'filepath', 'infojson_filename', 'original_url', 'playlist_autonumber',
+                'entries', 'filepath', '_filename', 'infojson_filename', 'original_url', 'playlist_autonumber',
             }
         else:
             reject = lambda k, v: False
@@ -3579,7 +3596,7 @@ class YoutubeDL:
         def get_encoding(stream):
             ret = str(getattr(stream, 'encoding', 'missing (%s)' % type(stream).__name__))
             if not supports_terminal_sequences(stream):
-                from .compat import WINDOWS_VT_MODE
+                from .compat import WINDOWS_VT_MODE  # Must be imported locally
                 ret += ' (No VT)' if WINDOWS_VT_MODE is False else ' (No ANSI)'
             return ret
 
@@ -3653,10 +3670,11 @@ class YoutubeDL:
         ) or 'none'
         write_debug('exe versions: %s' % exe_str)
 
+        from .compat.compat_utils import get_package_info
         from .dependencies import available_dependencies
 
         write_debug('Optional libraries: %s' % (', '.join(sorted({
-            module.__name__.split('.')[0] for module in available_dependencies.values()
+            join_nonempty(*get_package_info(m)) for m in available_dependencies.values()
         })) or 'none'))
 
         self._setup_opener()
