@@ -45,9 +45,6 @@ class PostProcessor(metaclass=PostProcessorMetaClass):
     an initial argument and then with the returned value of the previous
     PostProcessor.
 
-    The chain will be stopped if one of them ever returns None or the end
-    of the chain is reached.
-
     PostProcessor objects follow a "mutual registration" process similar
     to InfoExtractor objects.
 
@@ -91,6 +88,12 @@ class PostProcessor(metaclass=PostProcessorMetaClass):
     def write_debug(self, text, *args, **kwargs):
         if self._downloader:
             return self._downloader.write_debug(text, *args, **kwargs)
+
+    def _delete_downloaded_files(self, *files_to_delete, **kwargs):
+        if self._downloader:
+            return self._downloader._delete_downloaded_files(*files_to_delete, **kwargs)
+        for filename in set(filter(None, files_to_delete)):
+            os.remove(filename)
 
     def get_param(self, name, default=None, *args, **kwargs):
         if self._downloader:
@@ -170,6 +173,8 @@ class PostProcessor(metaclass=PostProcessorMetaClass):
 
     def report_progress(self, s):
         s['_default_template'] = '%(postprocessor)s %(status)s' % s
+        if not self._downloader:
+            return
 
         progress_dict = s.copy()
         progress_dict.pop('info_dict')
@@ -178,7 +183,8 @@ class PostProcessor(metaclass=PostProcessorMetaClass):
         progress_template = self.get_param('progress_template', {})
         tmpl = progress_template.get('postprocess')
         if tmpl:
-            self._downloader.to_stdout(self._downloader.evaluate_outtmpl(tmpl, progress_dict))
+            self._downloader.to_screen(
+                self._downloader.evaluate_outtmpl(tmpl, progress_dict), skip_eol=True, quiet=False)
 
         self._downloader.to_console_title(self._downloader.evaluate_outtmpl(
             progress_template.get('postprocess-title') or 'yt-dlp %(progress._default_template)s',
@@ -207,5 +213,5 @@ class PostProcessor(metaclass=PostProcessorMetaClass):
                 raise PostProcessingError(f'Unable to communicate with {self.PP_NAME} API: {e}')
 
 
-class AudioConversionError(PostProcessingError):
+class AudioConversionError(PostProcessingError):  # Deprecated
     pass

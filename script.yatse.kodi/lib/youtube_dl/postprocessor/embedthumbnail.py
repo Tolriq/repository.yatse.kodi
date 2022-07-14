@@ -1,11 +1,11 @@
 import base64
-import imghdr
 import os
 import re
 import subprocess
 
 from .common import PostProcessor
 from .ffmpeg import FFmpegPostProcessor, FFmpegThumbnailsConvertorPP
+from ..compat import imghdr
 from ..dependencies import mutagen
 from ..utils import (
     Popen,
@@ -157,14 +157,12 @@ class EmbedThumbnailPP(FFmpegPostProcessor):
 
                     self._report_run('atomicparsley', filename)
                     self.write_debug('AtomicParsley command line: %s' % shell_quote(cmd))
-                    p = Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    stdout, stderr = p.communicate_or_kill()
-                    if p.returncode != 0:
-                        msg = stderr.decode('utf-8', 'replace').strip()
-                        self.report_warning(f'Unable to embed thumbnails using AtomicParsley; {msg}')
+                    stdout, stderr, returncode = Popen.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    if returncode:
+                        self.report_warning(f'Unable to embed thumbnails using AtomicParsley; {stderr.strip()}')
                     # for formats that don't support thumbnails (like 3gp) AtomicParsley
                     # won't create to the temporary file
-                    if b'No changes' in stdout:
+                    if 'No changes' in stdout:
                         self.report_warning('The file format doesn\'t support embedding a thumbnail')
                         success = False
 
@@ -220,11 +218,9 @@ class EmbedThumbnailPP(FFmpegPostProcessor):
             os.replace(temp_filename, filename)
 
         self.try_utime(filename, mtime, mtime)
-
-        files_to_delete = [thumbnail_filename]
-        if self._already_have_thumbnail:
-            if original_thumbnail == thumbnail_filename:
-                files_to_delete = []
-        elif original_thumbnail != thumbnail_filename:
-            files_to_delete.append(original_thumbnail)
-        return files_to_delete, info
+        converted = original_thumbnail != thumbnail_filename
+        self._delete_downloaded_files(
+            thumbnail_filename if converted or not self._already_have_thumbnail else None,
+            original_thumbnail if converted and not self._already_have_thumbnail else None,
+            info=info)
+        return [], info

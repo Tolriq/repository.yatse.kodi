@@ -1,6 +1,6 @@
 # flake8: noqa: F401
 """Imports all optional dependencies for the project.
-An attribute "_yt_dlp__identifier" may be inserted into the module if it uses an ambigious namespace"""
+An attribute "_yt_dlp__identifier" may be inserted into the module if it uses an ambiguous namespace"""
 
 try:
     import brotlicffi as brotli
@@ -73,6 +73,15 @@ except (ImportError, SyntaxError):
     # websockets 3.10 on python 3.6 causes SyntaxError
     # See https://github.com/yt-dlp/yt-dlp/issues/2633
     websockets = None
+
+
+try:
+    import xattr  # xattr or pyxattr
+except ImportError:
+    xattr = None
+else:
+    if hasattr(xattr, 'set'):  # pyxattr
+        xattr._yt_dlp__identifier = 'pyxattr'
 
 
 all_dependencies = {k: v for k, v in globals().items() if not k.startswith('_')}
