@@ -35,7 +35,7 @@ def fixed_unified_strdate(date_str, day_first=True):
             except:  # Added to bypass Python bug on Kodi 17 - Windows
                 pass
     if upload_date is not None:
-        return compat_str(upload_date)
+        return str(upload_date)
 
 
 # noinspection PyUnresolvedReferences
