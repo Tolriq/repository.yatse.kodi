@@ -41,6 +41,12 @@ def handle_magnet(data):
 
 
 def resolve_with_youtube_dl(url, parameters, action):
+    if (utils.get_setting('useCookiesFromBrowser')):
+        browserName = utils.get_setting('cookiesBrowserName')
+        
+        if browserName:
+            parameters['cookiesfrombrowser'] = [browserName]
+
     youtube_dl_resolver = YoutubeDL(parameters)
     youtube_dl_resolver.add_default_info_extractors()
     try:

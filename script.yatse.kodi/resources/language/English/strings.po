@@ -50,3 +50,11 @@ msgstr ""
 msgctxt "#32010"
 msgid "Skip SSL verification"
 msgstr ""
+
+msgctxt "#32011"
+msgid "Use cookies from browser for YoutubeDL"
+msgstr ""
+
+msgctxt "#32012"
+msgid "Browser with cookies for YoutubeDL"
+msgstr ""

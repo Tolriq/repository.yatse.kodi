@@ -34,3 +34,27 @@ msgstr "Проверьте, есть ли обновление для этого
 msgctxt "#32006"
 msgid "Unable to resolve the shared url."
 msgstr "Не удалось определить общий URL"
+
+msgctxt "#32007"
+msgid "Resolving shared media."
+msgstr "Обработка переданной ссылки."
+
+msgctxt "#32008"
+msgid "Prefer Kodi Youtube addon for Youtube urls"
+msgstr "Предпочитать дополнение YouTube для Kodi при открытии ссылок на YouTube"
+
+msgctxt "#32009"
+msgid "Network"
+msgstr "Сеть"
+
+msgctxt "#32010"
+msgid "Skip SSL verification"
+msgstr "Отключить проверку SSL сертификатов"
+
+msgctxt "#32011"
+msgid "Use cookies from browser for YoutubeDL"
+msgstr "Использовать для YoutubeDL cookies из браузера"
+
+msgctxt "#32012"
+msgid "Browser with cookies for YoutubeDL"
+msgstr "Браузер с cookies для YoutubeDL"
