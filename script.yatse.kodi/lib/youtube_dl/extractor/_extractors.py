@@ -408,6 +408,7 @@ from .dplay import (
     DiscoveryLifeIE,
     AnimalPlanetIE,
     TLCIE,
+    MotorTrendIE,
     DiscoveryPlusIndiaIE,
     DiscoveryNetworksDeIE,
     DiscoveryPlusItalyIE,
@@ -1244,7 +1245,7 @@ from .parliamentliveuk import ParliamentLiveUKIE
 from .parlview import ParlviewIE
 from .patreon import (
     PatreonIE,
-    PatreonUserIE
+    PatreonCampaignIE
 )
 from .pbs import PBSIE
 from .pearvideo import PearVideoIE
@@ -1391,6 +1392,7 @@ from .rai import (
     RaiPlaySoundIE,
     RaiPlaySoundLiveIE,
     RaiPlaySoundPlaylistIE,
+    RaiNewsIE,
     RaiIE,
 )
 from .raywenderlich import (
@@ -1446,7 +1448,7 @@ from .rtbf import RTBFIE
 from .rte import RteIE, RteRadioIE
 from .rtlnl import (
     RtlNlIE,
-    RTLLuTeleVODIE, 
+    RTLLuTeleVODIE,
     RTLLuArticleIE,
     RTLLuLiveIE,
     RTLLuRadioIE,
@@ -1474,6 +1476,7 @@ from .rtve import (
 )
 from .rtvnh import RTVNHIE
 from .rtvs import RTVSIE
+from .rtvslo import RTVSLOIE
 from .ruhd import RUHDIE
 from .rule34video import Rule34VideoIE
 from .rumble import (
@@ -1724,6 +1727,7 @@ from .telequebec import (
 )
 from .teletask import TeleTaskIE
 from .telewebion import TelewebionIE
+from .tempo import TempoIE
 from .tennistv import TennisTVIE
 from .tenplay import TenPlayIE
 from .testurl import TestURLIE
@@ -2087,6 +2091,8 @@ from .weibo import (
     WeiboMobileIE
 )
 from .weiqitv import WeiqiTVIE
+from .wetv import WeTvEpisodeIE, WeTvSeriesIE
+from .wikimedia import WikimediaIE
 from .willow import WillowIE
 from .wimtv import WimTVIE
 from .whowatch import WhoWatchIE
