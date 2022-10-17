@@ -46,6 +46,20 @@ class ArteTVIE(ArteTVBaseIE):
         },
         'params': {'skip_download': 'm3u8'}
     }, {
+        'note': 'No alt_title',
+        'url': 'https://www.arte.tv/fr/videos/110371-000-A/la-chaleur-supplice-des-arbres-de-rue/',
+        'info_dict': {
+            'id': '110371-000-A',
+            'ext': 'mp4',
+            'upload_date': '20220718',
+            'duration': 154,
+            'timestamp': 1658162460,
+            'description': 'md5:5890f36fe7dccfadb8b7c0891de54786',
+            'title': 'La chaleur, supplice des arbres de rue',
+            'thumbnail': 'https://api-cdn.arte.tv/img/v2/image/CPE2sQDtD8GLQgt8DuYHLf/940x530',
+        },
+        'params': {'skip_download': 'm3u8'}
+    }, {
         'url': 'https://api.arte.tv/api/player/v2/config/de/100605-013-A',
         'only_matching': True,
     }, {
@@ -81,24 +95,24 @@ class ArteTVIE(ArteTVBaseIE):
 
     # all obtained by exhaustive testing
     _COUNTRIES_MAP = {
-        'DE_FR': {
+        'DE_FR': (
             'BL', 'DE', 'FR', 'GF', 'GP', 'MF', 'MQ', 'NC',
             'PF', 'PM', 'RE', 'WF', 'YT',
-        },
+        ),
         # with both of the below 'BE' sometimes works, sometimes doesn't
-        'EUR_DE_FR': {
+        'EUR_DE_FR': (
             'AT', 'BL', 'CH', 'DE', 'FR', 'GF', 'GP', 'LI',
             'MC', 'MF', 'MQ', 'NC', 'PF', 'PM', 'RE', 'WF',
             'YT',
-        },
-        'SAT': {
+        ),
+        'SAT': (
             'AD', 'AT', 'AX', 'BG', 'BL', 'CH', 'CY', 'CZ',
             'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GF',
             'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'KN', 'LI',
             'LT', 'LU', 'LV', 'MC', 'MF', 'MQ', 'MT', 'NC',
             'NL', 'NO', 'PF', 'PL', 'PM', 'PT', 'RE', 'RO',
             'SE', 'SI', 'SK', 'SM', 'VA', 'WF', 'YT',
-        },
+        ),
     }
 
     def _real_extract(self, url):
@@ -121,6 +135,7 @@ class ArteTVIE(ArteTVBaseIE):
                 'Video is not available in this language edition of Arte or broadcast rights expired', expected=True)
 
         formats, subtitles = [], {}
+        secondary_formats = []
         for stream in config['data']['attributes']['streams']:
             # official player contains code like `e.get("versions")[0].eStat.ml5`
             stream_version = stream['versions'][0]
@@ -138,22 +153,26 @@ class ArteTVIE(ArteTVBaseIE):
                     not m.group('sdh_sub'),                 # and we prefer not the hard-of-hearing subtitles if there are subtitles
                 )))
 
+            short_label = traverse_obj(stream_version, 'shortLabel', expected_type=str, default='?')
             if stream['protocol'].startswith('HLS'):
                 fmts, subs = self._extract_m3u8_formats_and_subtitles(
                     stream['url'], video_id=video_id, ext='mp4', m3u8_id=stream_version_code, fatal=False)
                 for fmt in fmts:
                     fmt.update({
-                        'format_note': f'{stream_version.get("label", "unknown")} [{stream_version.get("shortLabel", "?")}]',
+                        'format_note': f'{stream_version.get("label", "unknown")} [{short_label}]',
                         'language_preference': lang_pref,
                     })
-                formats.extend(fmts)
+                if any(map(short_label.startswith, ('cc', 'OGsub'))):
+                    secondary_formats.extend(fmts)
+                else:
+                    formats.extend(fmts)
                 self._merge_subtitles(subs, target=subtitles)
 
             elif stream['protocol'] in ('HTTPS', 'RTMP'):
                 formats.append({
                     'format_id': f'{stream["protocol"]}-{stream_version_code}',
                     'url': stream['url'],
-                    'format_note': f'{stream_version.get("label", "unknown")} [{stream_version.get("shortLabel", "?")}]',
+                    'format_note': f'{stream_version.get("label", "unknown")} [{short_label}]',
                     'language_preference': lang_pref,
                     # 'ext': 'mp4',  # XXX: may or may not be necessary, at least for HTTPS
                 })
@@ -165,6 +184,8 @@ class ArteTVIE(ArteTVBaseIE):
             # The JS also looks for chapters in config['data']['attributes']['chapters'],
             # but I am yet to find a video having those
 
+        formats.extend(secondary_formats)
+        self._remove_duplicate_formats(formats)
         self._sort_formats(formats)
 
         metadata = config['data']['attributes']['metadata']
@@ -172,8 +193,8 @@ class ArteTVIE(ArteTVBaseIE):
         return {
             'id': metadata['providerId'],
             'webpage_url': traverse_obj(metadata, ('link', 'url')),
-            'title': metadata.get('subtitle'),
-            'alt_title': metadata.get('title'),
+            'title': traverse_obj(metadata, 'subtitle', 'title'),
+            'alt_title': metadata.get('subtitle') and metadata.get('title'),
             'description': metadata.get('description'),
             'duration': traverse_obj(metadata, ('duration', 'seconds')),
             'language': metadata.get('language'),
@@ -190,6 +211,7 @@ class ArteTVIE(ArteTVBaseIE):
 
 class ArteTVEmbedIE(InfoExtractor):
     _VALID_URL = r'https?://(?:www\.)?arte\.tv/player/v\d+/index\.php\?.*?\bjson_url=.+'
+    _EMBED_REGEX = [r'<(?:iframe|script)[^>]+src=(["\'])(?P<url>(?:https?:)?//(?:www\.)?arte\.tv/player/v\d+/index\.php\?.*?\bjson_url=.+?)\1']
     _TESTS = [{
         'url': 'https://www.arte.tv/player/v5/index.php?json_url=https%3A%2F%2Fapi.arte.tv%2Fapi%2Fplayer%2Fv2%2Fconfig%2Fde%2F100605-013-A&lang=de&autoplay=true&mute=0100605-013-A',
         'info_dict': {
@@ -204,12 +226,6 @@ class ArteTVEmbedIE(InfoExtractor):
         'url': 'https://www.arte.tv/player/v3/index.php?json_url=https://api.arte.tv/api/player/v2/config/de/100605-013-A',
         'only_matching': True,
     }]
-
-    @staticmethod
-    def _extract_urls(webpage):
-        return [url for _, url in re.findall(
-            r'<(?:iframe|script)[^>]+src=(["\'])(?P<url>(?:https?:)?//(?:www\.)?arte\.tv/player/v\d+/index\.php\?.*?\bjson_url=.+?)\1',
-            webpage)]
 
     def _real_extract(self, url):
         qs = parse_qs(url)
