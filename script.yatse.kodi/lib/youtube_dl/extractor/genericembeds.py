@@ -20,7 +20,7 @@ class HTML5MediaEmbedIE(InfoExtractor):
     ]
 
     def _extract_from_webpage(self, url, webpage):
-        video_id, title = self._generic_id(url), self._generic_title(url)
+        video_id, title = self._generic_id(url), self._generic_title(url, webpage)
         entries = self._parse_html5_media_entries(url, webpage, video_id, m3u8_id='hls') or []
         for num, entry in enumerate(entries, start=1):
             entry.update({
@@ -30,7 +30,6 @@ class HTML5MediaEmbedIE(InfoExtractor):
                     make_archive_id('generic', f'{video_id}-{num}' if len(entries) > 1 else video_id),
                 ],
             })
-            self._sort_formats(entry['formats'])
             yield entry
 
 

@@ -294,9 +294,10 @@ def create_parser():
 
         aliases = (x if x.startswith('-') else f'--{x}' for x in map(str.strip, aliases.split(',')))
         try:
+            args = [f'ARG{i}' for i in range(nargs)]
             alias_group.add_option(
-                *aliases, help=opts, nargs=nargs, dest=parser.ALIAS_DEST, type='str' if nargs else None,
-                metavar=' '.join(f'ARG{i}' for i in range(nargs)), action='callback',
+                *aliases, nargs=nargs, dest=parser.ALIAS_DEST, type='str' if nargs else None,
+                metavar=' '.join(args), help=opts.format(*args), action='callback',
                 callback=_alias_callback, callback_kwargs={'opts': opts, 'nargs': nargs})
         except Exception as err:
             raise optparse.OptionValueError(f'wrong {opt_str} formatting; {err}')
@@ -534,10 +535,10 @@ def create_parser():
         '-I', '--playlist-items',
         dest='playlist_items', metavar='ITEM_SPEC', default=None,
         help=(
-            'Comma separated playlist_index of the videos to download. '
+            'Comma separated playlist_index of the items to download. '
             'You can specify a range using "[START]:[STOP][:STEP]". For backward compatibility, START-STOP is also supported. '
             'Use negative indices to count from the right and negative STEP to download in reverse order. '
-            'E.g. "-I 1:3,7,-5::2" used on a playlist of size 15 will download the videos at index 1,2,3,7,11,13,15'))
+            'E.g. "-I 1:3,7,-5::2" used on a playlist of size 15 will download the items at index 1,2,3,7,11,13,15'))
     selection.add_option(
         '--match-title',
         dest='matchtitle', metavar='REGEX',
@@ -549,11 +550,11 @@ def create_parser():
     selection.add_option(
         '--min-filesize',
         metavar='SIZE', dest='min_filesize', default=None,
-        help='Do not download any videos smaller than SIZE, e.g. 50k or 44.6M')
+        help='Abort download if filesize is smaller than SIZE, e.g. 50k or 44.6M')
     selection.add_option(
         '--max-filesize',
         metavar='SIZE', dest='max_filesize', default=None,
-        help='Do not download any videos larger than SIZE, e.g. 50k or 44.6M')
+        help='Abort download if filesize is larger than SIZE, e.g. 50k or 44.6M')
     selection.add_option(
         '--date',
         metavar='DATE', dest='date', default=None,
@@ -634,7 +635,7 @@ def create_parser():
     selection.add_option(
         '--break-per-input',
         action='store_true', dest='break_per_url', default=False,
-        help='--break-on-existing, --break-on-reject, --max-downloads, and autonumber resets per input URL')
+        help='Alters --max-downloads, --break-on-existing, --break-on-reject, and autonumber to reset per input URL')
     selection.add_option(
         '--no-break-per-input',
         action='store_false', dest='break_per_url',
@@ -1737,7 +1738,7 @@ def create_parser():
         '--sponsorblock-remove', metavar='CATS',
         dest='sponsorblock_remove', default=set(), action='callback', type='str',
         callback=_set_from_options_callback, callback_kwargs={
-            'allowed_values': set(SponsorBlockPP.CATEGORIES.keys()) - set(SponsorBlockPP.POI_CATEGORIES.keys()),
+            'allowed_values': set(SponsorBlockPP.CATEGORIES.keys()) - set(SponsorBlockPP.NON_SKIPPABLE_CATEGORIES.keys()),
             # Note: From https://wiki.sponsor.ajay.app/w/Types:
             # The filler category is very aggressive.
             # It is strongly recommended to not use this in a client by default.
@@ -1747,7 +1748,7 @@ def create_parser():
             'If a category is present in both mark and remove, remove takes precedence. '
             'The syntax and available categories are the same as for --sponsorblock-mark '
             'except that "default" refers to "all,-filler" '
-            f'and {", ".join(SponsorBlockPP.POI_CATEGORIES.keys())} is not available'))
+            f'and {", ".join(SponsorBlockPP.NON_SKIPPABLE_CATEGORIES.keys())} are not available'))
     sponsorblock.add_option(
         '--sponsorblock-chapter-title', metavar='TEMPLATE',
         default=DEFAULT_SPONSORBLOCK_CHAPTER_TITLE, dest='sponsorblock_chapter_title',

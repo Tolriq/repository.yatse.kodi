@@ -1,12 +1,7 @@
 import re
 
 from .common import InfoExtractor
-from ..utils import (
-    determine_ext,
-    js_to_json,
-    mimetype2ext,
-    traverse_obj,
-)
+from ..utils import determine_ext, js_to_json, mimetype2ext, traverse_obj
 
 
 class TV24UAVideoIE(InfoExtractor):
@@ -73,12 +68,11 @@ class TV24UAVideoIE(InfoExtractor):
             self._search_json(
                 r'var\s*vPlayConfig\s*=\s*', webpage, 'thumbnail',
                 video_id, default=None, transform_source=js_to_json), 'poster')
-        self._sort_formats(formats)
         return {
             'id': video_id,
             'formats': formats,
             'subtitles': subtitles,
             'thumbnail': thumbnail or self._og_search_thumbnail(webpage),
-            'title': self._html_extract_title(webpage) or self._og_search_title(webpage),
+            'title': self._generic_title('', webpage),
             'description': self._og_search_description(webpage, default=None),
         }

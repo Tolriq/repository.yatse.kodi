@@ -25,8 +25,8 @@ $fileVersion = (Get-Content $file | Select -First 1)
 
 ((Get-Content -path "script.yatse.kodi\addon.xml.template" -Raw) -replace '{Version}',$fileVersion) | Set-Content -Path "script.yatse.kodi\addon.xml"
 
-#py repo_generator.py
-py repo_generator_matrix.py
+#python repo_generator.py
+python repo_generator_matrix.py
 
 git add -A
 git commit -m "Sync yt-dlp"
