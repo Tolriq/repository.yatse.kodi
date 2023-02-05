@@ -292,7 +292,7 @@ class YoutubeBaseInfoExtractor(InfoExtractor):
     """Provide base functions for Youtube extractors"""
 
     _RESERVED_NAMES = (
-        r'channel|c|user|playlist|watch|w|v|embed|e|watch_popup|clip|'
+        r'channel|c|user|playlist|watch|w|v|embed|e|live|watch_popup|clip|'
         r'shorts|movies|results|search|shared|hashtag|trending|explore|feed|feeds|'
         r'browse|oembed|get_video_info|iframe_api|s/player|source|'
         r'storefront|oops|index|account|t/terms|about|upload|signin|logout')
@@ -1012,7 +1012,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                             youtube\.googleapis\.com)/                        # the various hostnames, with wildcard subdomains
                          (?:.*?\#/)?                                          # handle anchor (#/) redirect urls
                          (?:                                                  # the various things that can precede the ID:
-                             (?:(?:v|embed|e|shorts)/(?!videoseries|live_stream))  # v/ or embed/ or e/ or shorts/
+                             (?:(?:v|embed|e|shorts|live)/(?!videoseries|live_stream))  # v/ or embed/ or e/ or shorts/
                              |(?:                                             # or the v= param in all its forms
                                  (?:(?:watch|movie)(?:_popup)?(?:\.php)?/?)?  # preceding watch(_popup|.php) or nothing (like /?v=xxxx)
                                  (?:\?|\#!?)                                  # the params delimiter ? or # or #!
@@ -2573,7 +2573,38 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'duration': 106,
             },
             'params': {'extractor_args': {'youtube': {'player_client': ['tv_embedded']}}, 'format': '251-drc'},
-        }
+        },
+        {
+            'url': 'https://www.youtube.com/live/qVv6vCqciTM',
+            'info_dict': {
+                'id': 'qVv6vCqciTM',
+                'ext': 'mp4',
+                'age_limit': 0,
+                'uploader_id': 'UCIdEIHpS0TdkqRkHL5OkLtA',
+                'comment_count': int,
+                'chapters': 'count:13',
+                'upload_date': '20221223',
+                'thumbnail': 'https://i.ytimg.com/vi/qVv6vCqciTM/maxresdefault.jpg',
+                'channel_url': 'https://www.youtube.com/channel/UCIdEIHpS0TdkqRkHL5OkLtA',
+                'uploader_url': 'http://www.youtube.com/channel/UCIdEIHpS0TdkqRkHL5OkLtA',
+                'like_count': int,
+                'release_date': '20221223',
+                'tags': ['Vtuber', '月ノ美兎', '名取さな', 'にじさんじ', 'クリスマス', '3D配信'],
+                'title': '【 #インターネット女クリスマス 】3Dで歌ってはしゃぐインターネットの女たち【月ノ美兎/名取さな】',
+                'view_count': int,
+                'playable_in_embed': True,
+                'duration': 4438,
+                'availability': 'public',
+                'channel_follower_count': int,
+                'channel_id': 'UCIdEIHpS0TdkqRkHL5OkLtA',
+                'categories': ['Entertainment'],
+                'live_status': 'was_live',
+                'release_timestamp': 1671793345,
+                'channel': 'さなちゃんねる',
+                'description': 'md5:6aebf95cc4a1d731aebc01ad6cc9806d',
+                'uploader': 'さなちゃんねる',
+            },
+        },
     ]
 
     _WEBPAGE_TESTS = [
@@ -2650,18 +2681,19 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
             """
             @returns (manifest_url, manifest_stream_number, is_live) or None
             """
-            with lock:
-                refetch_manifest(format_id, delay)
+            for retry in self.RetryManager(fatal=False):
+                with lock:
+                    refetch_manifest(format_id, delay)
 
-            f = next((f for f in formats if f['format_id'] == format_id), None)
-            if not f:
-                if not is_live:
-                    self.to_screen(f'{video_id}: Video is no longer live')
-                else:
-                    self.report_warning(
-                        f'Cannot find refreshed manifest for format {format_id}{bug_reports_message()}')
-                return None
-            return f['manifest_url'], f['manifest_stream_number'], is_live
+                f = next((f for f in formats if f['format_id'] == format_id), None)
+                if not f:
+                    if not is_live:
+                        retry.error = f'{video_id}: Video is no longer live'
+                    else:
+                        retry.error = f'Cannot find refreshed manifest for format {format_id}{bug_reports_message()}'
+                    continue
+                return f['manifest_url'], f['manifest_stream_number'], is_live
+            return None
 
         for f in formats:
             f['is_live'] = is_live
@@ -3683,7 +3715,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'url': fmt_url,
                 'width': int_or_none(fmt.get('width')),
                 'language': join_nonempty(audio_track.get('id', '').split('.')[0],
-                                          'desc' if language_preference < -1 else ''),
+                                          'desc' if language_preference < -1 else '') or None,
                 'language_preference': language_preference,
                 # Strictly de-prioritize damaged and 3gp formats
                 'preference': -10 if is_damaged else -2 if itag == '17' else None,
@@ -5107,7 +5139,7 @@ class YoutubeTabIE(YoutubeTabBaseInfoExtractor):
     IE_DESC = 'YouTube Tabs'
     _VALID_URL = r'''(?x:
         https?://
-            (?:\w+\.)?
+            (?!consent\.)(?:\w+\.)?
             (?:
                 youtube(?:kids)?\.com|
                 %(invidious)s
@@ -6915,6 +6947,51 @@ class YoutubeClipIE(YoutubeTabBaseInfoExtractor):
             'section_start': int(clip_data['startTimeMs']) / 1000,
             'section_end': int(clip_data['endTimeMs']) / 1000,
         }
+
+
+class YoutubeConsentRedirectIE(YoutubeBaseInfoExtractor):
+    IE_NAME = 'youtube:consent'
+    IE_DESC = False  # Do not list
+    _VALID_URL = r'https?://consent\.youtube\.com/m\?'
+    _TESTS = [{
+        'url': 'https://consent.youtube.com/m?continue=https%3A%2F%2Fwww.youtube.com%2Flive%2FqVv6vCqciTM%3Fcbrd%3D1&gl=NL&m=0&pc=yt&hl=en&src=1',
+        'info_dict': {
+            'id': 'qVv6vCqciTM',
+            'ext': 'mp4',
+            'age_limit': 0,
+            'uploader_id': 'UCIdEIHpS0TdkqRkHL5OkLtA',
+            'comment_count': int,
+            'chapters': 'count:13',
+            'upload_date': '20221223',
+            'thumbnail': 'https://i.ytimg.com/vi/qVv6vCqciTM/maxresdefault.jpg',
+            'channel_url': 'https://www.youtube.com/channel/UCIdEIHpS0TdkqRkHL5OkLtA',
+            'uploader_url': 'http://www.youtube.com/channel/UCIdEIHpS0TdkqRkHL5OkLtA',
+            'like_count': int,
+            'release_date': '20221223',
+            'tags': ['Vtuber', '月ノ美兎', '名取さな', 'にじさんじ', 'クリスマス', '3D配信'],
+            'title': '【 #インターネット女クリスマス 】3Dで歌ってはしゃぐインターネットの女たち【月ノ美兎/名取さな】',
+            'view_count': int,
+            'playable_in_embed': True,
+            'duration': 4438,
+            'availability': 'public',
+            'channel_follower_count': int,
+            'channel_id': 'UCIdEIHpS0TdkqRkHL5OkLtA',
+            'categories': ['Entertainment'],
+            'live_status': 'was_live',
+            'release_timestamp': 1671793345,
+            'channel': 'さなちゃんねる',
+            'description': 'md5:6aebf95cc4a1d731aebc01ad6cc9806d',
+            'uploader': 'さなちゃんねる',
+        },
+        'add_ie': ['Youtube'],
+        'params': {'skip_download': 'Youtube'},
+    }]
+
+    def _real_extract(self, url):
+        redirect_url = url_or_none(parse_qs(url).get('continue', [None])[-1])
+        if not redirect_url:
+            raise ExtractorError('Invalid cookie consent redirect URL', expected=True)
+        return self.url_result(redirect_url)
 
 
 class YoutubeTruncatedIDIE(InfoExtractor):

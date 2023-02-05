@@ -2106,7 +2106,7 @@ if sys.platform == 'win32':
             ('hEvent', ctypes.wintypes.HANDLE),
         ]
 
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = ctypes.WinDLL('kernel32')
     LockFileEx = kernel32.LockFileEx
     LockFileEx.argtypes = [
         ctypes.wintypes.HANDLE,     # hFile
@@ -3368,7 +3368,7 @@ def js_to_json(code, vars={}, *, strict=False):
             try:
                 if not strict:
                     json.loads(vars[v])
-            except json.decoder.JSONDecodeError:
+            except json.JSONDecodeError:
                 return json.dumps(vars[v])
             else:
                 return vars[v]
@@ -3385,6 +3385,8 @@ def js_to_json(code, vars={}, *, strict=False):
     if not strict:
         code = re.sub(r'new Date\((".+")\)', r'\g<1>', code)
         code = re.sub(r'new \w+\((.*?)\)', lambda m: json.dumps(m.group(0)), code)
+        code = re.sub(r'parseInt\([^\d]+(\d+)[^\d]+\)', r'\1', code)
+        code = re.sub(r'\(function\([^)]*\)\s*\{[^}]*\}\s*\)\s*\(\s*(["\'][^)]*["\'])\s*\)', r'\1', code)
 
     return re.sub(rf'''(?sx)
         {STRING_RE}|
@@ -3529,7 +3531,7 @@ def mimetype2ext(mt, default=NO_DEFAULT):
         # Per RFC 3003, audio/mpeg can be .mp1, .mp2 or .mp3.
         # Using .mp3 as it's the most popular one
         'audio/mpeg': 'mp3',
-        'audio/webm': 'weba',
+        'audio/webm': 'webm',
         'audio/x-matroska': 'mka',
         'audio/x-mpegurl': 'm3u',
         'midi': 'mid',
@@ -5243,6 +5245,15 @@ def random_birthday(year_field, month_field, day_field):
     }
 
 
+def find_available_port(interface=''):
+    try:
+        with socket.socket() as sock:
+            sock.bind((interface, 0))
+            return sock.getsockname()[1]
+    except OSError:
+        return None
+
+
 # Templates for internet shortcut files, which are plain text files.
 DOT_URL_LINK_TEMPLATE = '''\
 [InternetShortcut]
@@ -5378,36 +5389,22 @@ def get_executable_path():
 
 
 def get_user_config_dirs(package_name):
-    locations = set()
-
     # .config (e.g. ~/.config/package_name)
     xdg_config_home = os.getenv('XDG_CONFIG_HOME') or compat_expanduser('~/.config')
-    config_dir = os.path.join(xdg_config_home, package_name)
-    if os.path.isdir(config_dir):
-        locations.add(config_dir)
+    yield os.path.join(xdg_config_home, package_name)
 
     # appdata (%APPDATA%/package_name)
     appdata_dir = os.getenv('appdata')
     if appdata_dir:
-        config_dir = os.path.join(appdata_dir, package_name)
-        if os.path.isdir(config_dir):
-            locations.add(config_dir)
+        yield os.path.join(appdata_dir, package_name)
 
     # home (~/.package_name)
-    user_config_directory = os.path.join(compat_expanduser('~'), '.%s' % package_name)
-    if os.path.isdir(user_config_directory):
-        locations.add(user_config_directory)
-
-    return locations
+    yield os.path.join(compat_expanduser('~'), f'.{package_name}')
 
 
 def get_system_config_dirs(package_name):
-    locations = set()
     # /etc/package_name
-    system_config_directory = os.path.join('/etc', package_name)
-    if os.path.isdir(system_config_directory):
-        locations.add(system_config_directory)
-    return locations
+    yield os.path.join('/etc', package_name)
 
 
 def traverse_obj(
@@ -5429,7 +5426,10 @@ def traverse_obj(
 
     The keys in the path can be one of:
         - `None`:           Return the current object.
-        - `str`/`int`:      Return `obj[key]`. For `re.Match, return `obj.group(key)`.
+        - `set`:            Requires the only item in the set to be a type or function,
+                            like `{type}`/`{func}`. If a `type`, returns only values
+                            of this type. If a function, returns `func(obj)`.
+        - `str`/`int`:      Return `obj[key]`. For `re.Match`, return `obj.group(key)`.
         - `slice`:          Branch out and return all values in `obj[key]`.
         - `Ellipsis`:       Branch out and return a list of all values.
         - `tuple`/`list`:   Branch out and return a list of all matching values.
@@ -5437,6 +5437,8 @@ def traverse_obj(
         - `function`:       Branch out and return values filtered by the function.
                             Read as: `[value for key, value in obj if function(key, value)]`.
                             For `Sequence`s, `key` is the index of the value.
+                            For `re.Match`es, `key` is the group number (0 = full match)
+                            as well as additionally any group names, if given.
         - `dict`            Transform the current object and return a matching dict.
                             Read as: `{key: traverse_obj(obj, path) for key, path in dct.items()}`.
 
@@ -5446,6 +5448,8 @@ def traverse_obj(
     @param default          Value to return if the paths do not match.
     @param expected_type    If a `type`, only accept final values of this type.
                             If any other callable, try to call the function on each result.
+                            If the last key in the path is a `dict`, it will apply to each value inside
+                            the dict instead, recursively. This does respect branching paths.
     @param get_all          If `False`, return the first matching result, otherwise all matching ones.
     @param casesense        If `False`, consider string dictionary keys as case insensitive.
 
@@ -5471,16 +5475,25 @@ def traverse_obj(
     else:
         type_test = lambda val: try_call(expected_type or IDENTITY, args=(val,))
 
-    def apply_key(key, obj):
+    def apply_key(key, test_type, obj):
         if obj is None:
             return
 
         elif key is None:
             yield obj
 
+        elif isinstance(key, set):
+            assert len(key) == 1, 'Set should only be used to wrap a single item'
+            item = next(iter(key))
+            if isinstance(item, type):
+                if isinstance(obj, item):
+                    yield obj
+            else:
+                yield try_call(item, args=(obj,))
+
         elif isinstance(key, (list, tuple)):
             for branch in key:
-                _, result = apply_path(obj, branch)
+                _, result = apply_path(obj, branch, test_type)
                 yield from result
 
         elif key is ...:
@@ -5499,7 +5512,9 @@ def traverse_obj(
             elif isinstance(obj, collections.abc.Mapping):
                 iter_obj = obj.items()
             elif isinstance(obj, re.Match):
-                iter_obj = enumerate((obj.group(), *obj.groups()))
+                iter_obj = itertools.chain(
+                    enumerate((obj.group(), *obj.groups())),
+                    obj.groupdict().items())
             elif traverse_string:
                 iter_obj = enumerate(str(obj))
             else:
@@ -5507,7 +5522,7 @@ def traverse_obj(
             yield from (v for k, v in iter_obj if try_call(key, args=(k, v)))
 
         elif isinstance(key, dict):
-            iter_obj = ((k, _traverse_obj(obj, v)) for k, v in key.items())
+            iter_obj = ((k, _traverse_obj(obj, v, test_type=test_type)) for k, v in key.items())
             yield {k: v if v is not None else default for k, v in iter_obj
                    if v is not None or default is not NO_DEFAULT}
 
@@ -5542,11 +5557,24 @@ def traverse_obj(
             with contextlib.suppress(IndexError):
                 yield obj[key]
 
-    def apply_path(start_obj, path):
+    def lazy_last(iterable):
+        iterator = iter(iterable)
+        prev = next(iterator, NO_DEFAULT)
+        if prev is NO_DEFAULT:
+            return
+
+        for item in iterator:
+            yield False, prev
+            prev = item
+
+        yield True, prev
+
+    def apply_path(start_obj, path, test_type=False):
         objs = (start_obj,)
         has_branched = False
 
-        for key in variadic(path):
+        key = None
+        for last, key in lazy_last(variadic(path, (str, bytes, dict, set))):
             if is_user_input and key == ':':
                 key = ...
 
@@ -5556,14 +5584,21 @@ def traverse_obj(
             if key is ... or isinstance(key, (list, tuple)) or callable(key):
                 has_branched = True
 
-            key_func = functools.partial(apply_key, key)
+            if __debug__ and callable(key):
+                # Verify function signature
+                inspect.signature(key).bind(None, None)
+
+            key_func = functools.partial(apply_key, key, last)
             objs = itertools.chain.from_iterable(map(key_func, objs))
+
+        if test_type and not isinstance(key, (dict, list, tuple)):
+            objs = map(type_test, objs)
 
         return has_branched, objs
 
-    def _traverse_obj(obj, path, use_list=True):
-        has_branched, results = apply_path(obj, path)
-        results = LazyList(x for x in map(type_test, results) if x is not None)
+    def _traverse_obj(obj, path, use_list=True, test_type=True):
+        has_branched, results = apply_path(obj, path, test_type)
+        results = LazyList(x for x in results if x is not None)
 
         if get_all and has_branched:
             return results.exhaust() if results or use_list else None
@@ -5590,8 +5625,10 @@ def get_first(obj, keys, **kwargs):
 
 
 def time_seconds(**kwargs):
-    t = datetime.datetime.now(datetime.timezone(datetime.timedelta(**kwargs)))
-    return t.timestamp()
+    """
+    Returns TZ-aware time in seconds since the epoch (1970-01-01T00:00:00Z)
+    """
+    return time.time() + datetime.timedelta(**kwargs).total_seconds()
 
 
 # create a JSON Web Signature (jws) with HS256 algorithm
@@ -5650,7 +5687,6 @@ def windows_enable_vt_mode():
 
     dll = ctypes.WinDLL('kernel32', use_last_error=False)
     handle = os.open('CONOUT$', os.O_RDWR)
-
     try:
         h_out = ctypes.wintypes.HANDLE(msvcrt.get_osfhandle(handle))
         dw_original_mode = ctypes.wintypes.DWORD()
@@ -5662,14 +5698,12 @@ def windows_enable_vt_mode():
             dw_original_mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING))
         if not success:
             raise Exception('SetConsoleMode failed')
-    except Exception as e:
-        write_string(f'WARNING: Cannot enable VT mode - {e}')
-    else:
-        global WINDOWS_VT_MODE
-        WINDOWS_VT_MODE = True
-        supports_terminal_sequences.cache_clear()
     finally:
         os.close(handle)
+
+    global WINDOWS_VT_MODE
+    WINDOWS_VT_MODE = True
+    supports_terminal_sequences.cache_clear()
 
 
 _terminal_sequences_re = re.compile('\033\\[[^m]+m')
