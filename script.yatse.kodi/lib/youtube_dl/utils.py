@@ -1438,19 +1438,16 @@ class YoutubeDLHandler(urllib.request.HTTPHandler):
                     raise original_ioerror
             resp = urllib.request.addinfourl(uncompressed, old_resp.headers, old_resp.url, old_resp.code)
             resp.msg = old_resp.msg
-            del resp.headers['Content-encoding']
         # deflate
         if resp.headers.get('Content-encoding', '') == 'deflate':
             gz = io.BytesIO(self.deflate(resp.read()))
             resp = urllib.request.addinfourl(gz, old_resp.headers, old_resp.url, old_resp.code)
             resp.msg = old_resp.msg
-            del resp.headers['Content-encoding']
         # brotli
         if resp.headers.get('Content-encoding', '') == 'br':
             resp = urllib.request.addinfourl(
                 io.BytesIO(self.brotli(resp.read())), old_resp.headers, old_resp.url, old_resp.code)
             resp.msg = old_resp.msg
-            del resp.headers['Content-encoding']
         # Percent-encode redirect URL of Location HTTP header to satisfy RFC 3986 (see
         # https://github.com/ytdl-org/youtube-dl/issues/6457).
         if 300 <= resp.code < 400:
@@ -3152,14 +3149,28 @@ def urlencode_postdata(*args, **kargs):
     return urllib.parse.urlencode(*args, **kargs).encode('ascii')
 
 
+def update_url(url, *, query_update=None, **kwargs):
+    """Replace URL components specified by kwargs
+       @param url           str or parse url tuple
+       @param query_update  update query
+       @returns             str
+    """
+    if isinstance(url, str):
+        if not kwargs and not query_update:
+            return url
+        else:
+            url = urllib.parse.urlparse(url)
+    if query_update:
+        assert 'query' not in kwargs, 'query_update and query cannot be specified at the same time'
+        kwargs['query'] = urllib.parse.urlencode({
+            **urllib.parse.parse_qs(url.query),
+            **query_update
+        }, True)
+    return urllib.parse.urlunparse(url._replace(**kwargs))
+
+
 def update_url_query(url, query):
-    if not query:
-        return url
-    parsed_url = urllib.parse.urlparse(url)
-    qs = urllib.parse.parse_qs(parsed_url.query)
-    qs.update(query)
-    return urllib.parse.urlunparse(parsed_url._replace(
-        query=urllib.parse.urlencode(qs, True)))
+    return update_url(url, query_update=query)
 
 
 def update_Request(req, url=None, data=None, headers=None, query=None):
@@ -3653,7 +3664,8 @@ def get_compatible_ext(*, vcodecs, acodecs, vexts, aexts, preferences=None):
         },
     }
 
-    sanitize_codec = functools.partial(try_get, getter=lambda x: x[0].split('.')[0].replace('0', ''))
+    sanitize_codec = functools.partial(
+        try_get, getter=lambda x: x[0].split('.')[0].replace('0', '').lower())
     vcodec, acodec = sanitize_codec(vcodecs), sanitize_codec(acodecs)
 
     for ext in preferences or COMPATIBLE_CODECS.keys():
@@ -3918,7 +3930,7 @@ class download_range_func:
                 and self.chapters == other.chapters and self.ranges == other.ranges)
 
     def __repr__(self):
-        return f'{type(self).__name__}({self.chapters}, {self.ranges})'
+        return f'{__name__}.{type(self).__name__}({self.chapters}, {self.ranges})'
 
 
 def parse_dfxp_time_expr(time_expr):
@@ -5373,8 +5385,8 @@ def random_uuidv4():
 def make_dir(path, to_screen=None):
     try:
         dn = os.path.dirname(path)
-        if dn and not os.path.exists(dn):
-            os.makedirs(dn)
+        if dn:
+            os.makedirs(dn, exist_ok=True)
         return True
     except OSError as err:
         if callable(to_screen) is not None:
@@ -5420,7 +5432,7 @@ def traverse_obj(
     Each of the provided `paths` is tested and the first producing a valid result will be returned.
     The next path will also be tested if the path branched but no results could be found.
     Supported values for traversal are `Mapping`, `Sequence` and `re.Match`.
-    A value of None is treated as the absence of a value.
+    Unhelpful values (`{}`, `None`) are treated as the absence of a value and discarded.
 
     The paths will be wrapped in `variadic`, so that `'key'` is conveniently the same as `('key', )`.
 
@@ -5446,6 +5458,8 @@ def traverse_obj(
 
     @params paths           Paths which to traverse by.
     @param default          Value to return if the paths do not match.
+                            If the last key in the path is a `dict`, it will apply to each value inside
+                            the dict instead, depth first. Try to avoid if using nested `dict` keys.
     @param expected_type    If a `type`, only accept final values of this type.
                             If any other callable, try to call the function on each result.
                             If the last key in the path is a `dict`, it will apply to each value inside
@@ -5460,12 +5474,15 @@ def traverse_obj(
     @param traverse_string  Whether to traverse into objects as strings.
                             If `True`, any non-compatible object will first be
                             converted into a string and then traversed into.
+                            The return value of that path will be a string instead,
+                            not respecting any further branching.
 
 
     @returns                The result of the object traversal.
                             If successful, `get_all=True`, and the path branches at least once,
                             then a list of results is returned instead.
-                            A list is always returned if the last path branches and no `default` is given.
+                            If no `default` is given and the last path branches, a `list` of results
+                            is always returned. If a path ends on a `dict` that result will always be a `dict`.
     """
     is_sequence = lambda x: isinstance(x, collections.abc.Sequence) and not isinstance(x, (str, bytes))
     casefold = lambda k: k.casefold() if isinstance(k, str) else k
@@ -5475,87 +5492,93 @@ def traverse_obj(
     else:
         type_test = lambda val: try_call(expected_type or IDENTITY, args=(val,))
 
-    def apply_key(key, test_type, obj):
-        if obj is None:
-            return
+    def apply_key(key, obj, is_last):
+        branching = False
+        result = None
+
+        if obj is None and traverse_string:
+            pass
 
         elif key is None:
-            yield obj
+            result = obj
 
         elif isinstance(key, set):
             assert len(key) == 1, 'Set should only be used to wrap a single item'
             item = next(iter(key))
             if isinstance(item, type):
                 if isinstance(obj, item):
-                    yield obj
+                    result = obj
             else:
-                yield try_call(item, args=(obj,))
+                result = try_call(item, args=(obj,))
 
         elif isinstance(key, (list, tuple)):
-            for branch in key:
-                _, result = apply_path(obj, branch, test_type)
-                yield from result
+            branching = True
+            result = itertools.chain.from_iterable(
+                apply_path(obj, branch, is_last)[0] for branch in key)
 
         elif key is ...:
+            branching = True
             if isinstance(obj, collections.abc.Mapping):
-                yield from obj.values()
+                result = obj.values()
             elif is_sequence(obj):
-                yield from obj
+                result = obj
             elif isinstance(obj, re.Match):
-                yield from obj.groups()
+                result = obj.groups()
             elif traverse_string:
-                yield from str(obj)
+                branching = False
+                result = str(obj)
+            else:
+                result = ()
 
         elif callable(key):
-            if is_sequence(obj):
-                iter_obj = enumerate(obj)
-            elif isinstance(obj, collections.abc.Mapping):
+            branching = True
+            if isinstance(obj, collections.abc.Mapping):
                 iter_obj = obj.items()
+            elif is_sequence(obj):
+                iter_obj = enumerate(obj)
             elif isinstance(obj, re.Match):
                 iter_obj = itertools.chain(
                     enumerate((obj.group(), *obj.groups())),
                     obj.groupdict().items())
             elif traverse_string:
+                branching = False
                 iter_obj = enumerate(str(obj))
             else:
-                return
-            yield from (v for k, v in iter_obj if try_call(key, args=(k, v)))
+                iter_obj = ()
+
+            result = (v for k, v in iter_obj if try_call(key, args=(k, v)))
+            if not branching:  # string traversal
+                result = ''.join(result)
 
         elif isinstance(key, dict):
-            iter_obj = ((k, _traverse_obj(obj, v, test_type=test_type)) for k, v in key.items())
-            yield {k: v if v is not None else default for k, v in iter_obj
-                   if v is not None or default is not NO_DEFAULT}
+            iter_obj = ((k, _traverse_obj(obj, v, False, is_last)) for k, v in key.items())
+            result = {
+                k: v if v is not None else default for k, v in iter_obj
+                if v is not None or default is not NO_DEFAULT
+            } or None
 
         elif isinstance(obj, collections.abc.Mapping):
-            yield (obj.get(key) if casesense or (key in obj)
-                   else next((v for k, v in obj.items() if casefold(k) == key), None))
+            result = (obj.get(key) if casesense or (key in obj) else
+                      next((v for k, v in obj.items() if casefold(k) == key), None))
 
         elif isinstance(obj, re.Match):
             if isinstance(key, int) or casesense:
                 with contextlib.suppress(IndexError):
-                    yield obj.group(key)
-                    return
+                    result = obj.group(key)
 
-            if not isinstance(key, str):
-                return
+            elif isinstance(key, str):
+                result = next((v for k, v in obj.groupdict().items() if casefold(k) == key), None)
 
-            yield next((v for k, v in obj.groupdict().items() if casefold(k) == key), None)
+        elif isinstance(key, (int, slice)):
+            if is_sequence(obj):
+                branching = isinstance(key, slice)
+                with contextlib.suppress(IndexError):
+                    result = obj[key]
+            elif traverse_string:
+                with contextlib.suppress(IndexError):
+                    result = str(obj)[key]
 
-        else:
-            if is_user_input:
-                key = (int_or_none(key) if ':' not in key
-                       else slice(*map(int_or_none, key.split(':'))))
-
-            if not isinstance(key, (int, slice)):
-                return
-
-            if not is_sequence(obj):
-                if not traverse_string:
-                    return
-                obj = str(obj)
-
-            with contextlib.suppress(IndexError):
-                yield obj[key]
+        return branching, result if branching else (result,)
 
     def lazy_last(iterable):
         iterator = iter(iterable)
@@ -5569,45 +5592,54 @@ def traverse_obj(
 
         yield True, prev
 
-    def apply_path(start_obj, path, test_type=False):
+    def apply_path(start_obj, path, test_type):
         objs = (start_obj,)
         has_branched = False
 
         key = None
         for last, key in lazy_last(variadic(path, (str, bytes, dict, set))):
-            if is_user_input and key == ':':
-                key = ...
+            if is_user_input and isinstance(key, str):
+                if key == ':':
+                    key = ...
+                elif ':' in key:
+                    key = slice(*map(int_or_none, key.split(':')))
+                elif int_or_none(key) is not None:
+                    key = int(key)
 
             if not casesense and isinstance(key, str):
                 key = key.casefold()
-
-            if key is ... or isinstance(key, (list, tuple)) or callable(key):
-                has_branched = True
 
             if __debug__ and callable(key):
                 # Verify function signature
                 inspect.signature(key).bind(None, None)
 
-            key_func = functools.partial(apply_key, key, last)
-            objs = itertools.chain.from_iterable(map(key_func, objs))
+            new_objs = []
+            for obj in objs:
+                branching, results = apply_key(key, obj, last)
+                has_branched |= branching
+                new_objs.append(results)
+
+            objs = itertools.chain.from_iterable(new_objs)
 
         if test_type and not isinstance(key, (dict, list, tuple)):
             objs = map(type_test, objs)
 
-        return has_branched, objs
+        return objs, has_branched, isinstance(key, dict)
 
-    def _traverse_obj(obj, path, use_list=True, test_type=True):
-        has_branched, results = apply_path(obj, path, test_type)
-        results = LazyList(x for x in results if x is not None)
-
+    def _traverse_obj(obj, path, allow_empty, test_type):
+        results, has_branched, is_dict = apply_path(obj, path, test_type)
+        results = LazyList(item for item in results if item not in (None, {}))
         if get_all and has_branched:
-            return results.exhaust() if results or use_list else None
+            if results:
+                return results.exhaust()
+            if allow_empty:
+                return [] if default is NO_DEFAULT else default
+            return None
 
-        return results[0] if results else None
+        return results[0] if results else {} if allow_empty and is_dict else None
 
     for index, path in enumerate(paths, 1):
-        use_list = default is NO_DEFAULT and index == len(paths)
-        result = _traverse_obj(obj, path, use_list)
+        result = _traverse_obj(obj, path, index == len(paths), True)
         if result is not None:
             return result
 
@@ -5999,6 +6031,18 @@ class classproperty:
         elif cls not in self._cache:
             self._cache[cls] = self.func(cls)
         return self._cache[cls]
+
+
+class function_with_repr:
+    def __init__(self, func):
+        functools.update_wrapper(self, func)
+        self.func = func
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+    def __repr__(self):
+        return f'{self.func.__module__}.{self.func.__qualname__}'
 
 
 class Namespace(types.SimpleNamespace):
