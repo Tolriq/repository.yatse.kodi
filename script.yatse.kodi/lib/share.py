@@ -105,13 +105,15 @@ def handle_unresolved_url(data, action):
                 logger.info(u'Youtube addon have DASH enabled or is configured as preferred use it')
                 utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % data, action)
                 return
-    logger.info(u'Trying to resolve with YoutubeDL')
-    result = resolve_with_youtube_dl(url, {'format': 'best', 'no_color': 'true', 'ignoreerrors': 'true'}, action)
+    media_filter_pass_1 = utils.get_setting('YoutubeDLMediaFilter_Pass1')
+    logger.info(u'Trying to resolve with YoutubeDL (Media Filter: %s)' % (media_filter_pass_1) )
+    result = resolve_with_youtube_dl(url, {'format': media_filter_pass_1, 'no_color': 'true', 'ignoreerrors': 'true'}, action)
     if result:
         return
     # Second pass with new params to fix site like reddit dash streams
-    logger.info(u'Trying to resolve with YoutubeDL other options')
-    result = resolve_with_youtube_dl(url, {'format': 'bestvideo+bestaudio/best', 'no_color': 'true', 'ignoreerrors': 'true'}, action)
+    logger.info(u'Trying to resolve with YoutubeDL other options (Media Filter: %s)' % (media_filter_pass_2) )
+    media_filter_pass_2 = utils.get_setting('YoutubeDLMediaFilter_Pass2')
+    result = resolve_with_youtube_dl(url, {'format': media_filter_pass_2, 'no_color': 'true', 'ignoreerrors': 'true'}, action)
     if result:
         return
     logger.error(u'Url not resolved by YoutubeDL')
