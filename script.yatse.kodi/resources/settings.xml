@@ -6,10 +6,10 @@
 	<category label="32001">
 		<setting label="32003" type="select" id="openMagnetWith" values="Elementum|Quasar|Torrenter V2|YATP" default="Elementum"/>
 		<setting id="preferYoutubeAddon" type="bool" label="32008" default="false"/>
-		<setting id="YoutubeDLMediaFilter_Pass1" type="text" label="32100" default="best"/>
-		<setting id="YoutubeDLMediaFilter_Pass2" type="text" label="32101" default="bestvideo+bestaudio/best"/>
 		<setting id="useCookiesFromBrowser" type="bool" label="32011" default="false"/>
 		<setting id="cookiesBrowserName" type="select" label="32012" values="firefox|safari|brave|chrome|chromium|edge|opera|vivaldi" visible="eq(-1,true)" />
+		<setting id="useYoutubeDLCustomFilter" type="bool" label="32100" default="false"/>
+		<setting id="YoutubeDLCustomMediaFilter" type="text" label="32101" default="" visible="eq(-1,true)"/>
 	</category>
 	<category label="32009">
 		<setting id="skipSslVerification" type="bool" label="32010" default="false"/>

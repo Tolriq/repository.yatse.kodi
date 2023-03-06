@@ -60,9 +60,9 @@ msgid "Browser with cookies for YoutubeDL"
 msgstr ""
 
 msgctxt "#32100"
-msgid "Media Filter String for YoutubeDL (Pass 1)"
+msgid "Use custom YoutubeDL format filter"
 msgstr ""
 
 msgctxt "#32101"
-msgid "Media Filter String for YoutubeDL (Pass 2)"
+msgid "Preferred YoutubeDL format"
 msgstr ""
