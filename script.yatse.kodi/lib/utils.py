@@ -22,6 +22,10 @@ if is_python_3():
     # noinspection PyShadowingBuiltins
     unicode = str
 
+if is_python_3():
+    from urllib.parse import quote
+else:
+    from urllib import quote
 
 class XBMCHandler(logging.StreamHandler):
     xbmc_levels = {
@@ -86,6 +90,13 @@ def play_url(url, action, meta_data=None, use_adaptive=False):
         if use_adaptive:
             list_item.setProperty('inputstreamaddon', 'inputstream.adaptive')
             list_item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
+
+        http_headers = meta_data.get('http_headers', {})
+
+        # Append http headers to simulate the same browser used by yt-dlp in the extract_info
+        for i, (k, v) in enumerate(http_headers.items()):
+            url = url + ('|' if i == 0 else '&')
+            url = url + f"{quote(k)}={quote(v)}"
     else:
         list_item = None
         if use_adaptive:
