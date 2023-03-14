@@ -85,6 +85,7 @@ def kodi_is_playing():
 
 
 def play_url(url, action, meta_data=None, use_adaptive=False):
+    kodi_url_params = {}
     if meta_data is not None:
         list_item = get_kodi_list_item(meta_data)
         if use_adaptive:
@@ -92,11 +93,10 @@ def play_url(url, action, meta_data=None, use_adaptive=False):
             list_item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
 
         http_headers = meta_data.get('http_headers', {})
+        if (get_setting('useYoutubeDLHttpHeader') == 'true') and http_headers:
+            # Add http headers to simulate the same browser used by yt-dlp in the extract_info()
+            kodi_url_params.update(http_headers)
 
-        # Append http headers to simulate the same browser used by yt-dlp in the extract_info
-        for i, (k, v) in enumerate(http_headers.items()):
-            url = url + ('|' if i == 0 else '&')
-            url = url + f"{quote(k)}={quote(v)}"
     else:
         list_item = None
         if use_adaptive:
@@ -105,7 +105,12 @@ def play_url(url, action, meta_data=None, use_adaptive=False):
             list_item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
     if url:
         if get_setting('skipSslVerification') == 'true' and url.startswith('https'):
-            url = '%s|verifypeer=false' % url
+            kodi_url_params.update({'verifypeer': 'false'})
+
+        # Append Kodi url parameters through the '|' (pipe) operator (ie. http header)
+        for i, (k, v) in enumerate(kodi_url_params.items()):
+            url = url + ('|' if (i == 0 and '|' not in url) else '&')
+            url = url + f"{quote(k)}={quote(v)}"
 
         if (action == 'play') or (not xbmc.Player().isPlaying()):
             logger.info(u'Playing url: %s' % url)
