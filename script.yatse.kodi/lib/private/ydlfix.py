@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
+import datetime
+import time
 
 from ..youtube_dl import utils
 
@@ -76,9 +78,19 @@ class ReplacementStdErr(sys.stderr.__class__):
         return False
 
 
+class proxydt(datetime.datetime):
+
+    @classmethod
+    def strptime(cls, date_string, format):
+        return datetime.datetime(*(time.strptime(date_string, format)[:6]))
+
+
+
 def patch_youtube_dl():
     utils.unified_strdate.__code__ = fixed_unified_strdate.__code__
     utils.unified_timestamp.__code__ = fixed_unified_timestamp.__code__
+    # Fix bug affecting embedded python applications: https://kodi.wiki/view/Python_Problems
+    utils.datetime.datetime = proxydt
     sys.stderr.__class__ = ReplacementStdErr
     try:
         import _subprocess
