@@ -59,6 +59,10 @@ msgctxt "#32012"
 msgid "Browser with cookies for YoutubeDL"
 msgstr ""
 
+msgctxt "#32013"
+msgid "Use YoutubeDL http headers"
+msgstr ""
+
 msgctxt "#32100"
 msgid "Use custom YoutubeDL format filter"
 msgstr ""
