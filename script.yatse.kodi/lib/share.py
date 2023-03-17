@@ -41,9 +41,9 @@ def handle_magnet(data):
 
 
 def resolve_with_youtube_dl(url, parameters, action):
-    if (utils.get_setting('useCookiesFromBrowser')):
+    if (utils.get_setting('useCookiesFromBrowser') == 'true'):
         browserName = utils.get_setting('cookiesBrowserName')
-        
+
         if browserName:
             parameters['cookiesfrombrowser'] = [browserName]
 

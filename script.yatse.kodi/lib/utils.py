@@ -85,6 +85,7 @@ def kodi_is_playing():
 
 
 def play_url(url, action, meta_data=None, use_adaptive=False):
+    url = url.strip()
     kodi_url_params = {}
     if meta_data is not None:
         list_item = get_kodi_list_item(meta_data)
@@ -190,7 +191,7 @@ def get_kodi_list_item(meta_data):
     if 'duration' in meta_data:
         item_info['duration'] = meta_data['duration']
     if 'url' in meta_data:
-        list_item.setPath(meta_data['url'])
+        list_item.setPath(meta_data['url'].strip())
     if 'categories' in meta_data:
         item_info['genre'] = meta_data['categories']
     if 'average_rating' in meta_data:

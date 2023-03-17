@@ -58,3 +58,15 @@ msgstr "Использовать для YoutubeDL cookies из браузера"
 msgctxt "#32012"
 msgid "Browser with cookies for YoutubeDL"
 msgstr "Браузер с cookies для YoutubeDL"
+
+msgctxt "#32013"
+msgid "Use YoutubeDL http headers"
+msgstr "Использовать HTTP заголовки YoutubeDL"
+
+msgctxt "#32100"
+msgid "Use custom YoutubeDL format filter"
+msgstr "Использовать кастомный формат фильтра для YoutubeDL"
+
+msgctxt "#32101"
+msgid "Preferred YoutubeDL format"
+msgstr "Предпочитаемый формат YoutubeDL"
