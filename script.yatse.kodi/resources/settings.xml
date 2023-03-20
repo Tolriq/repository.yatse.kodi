@@ -4,14 +4,17 @@
 	   <setting id="logEnabled" type="bool" label="32002" default="false"/>
 	</category>
 	<category label="32001">
-		<setting label="32003" type="select" id="openMagnetWith" values="Elementum|Quasar|Torrenter V2|YATP" default="Elementum"/>
-		<setting id="preferYoutubeAddon" type="bool" label="32008" default="false"/>
 		<setting id="useCookiesFromBrowser" type="bool" label="32011" default="false"/>
 		<setting id="cookiesBrowserName" type="select" label="32012" values="firefox|safari|brave|chrome|chromium|edge|opera|vivaldi" visible="eq(-1,true)" />
 		<setting id="useYoutubeDLHttpHeader" type="bool" label="32013" default="true"/>
 		<setting id="useYoutubeDLCustomFilter" type="bool" label="32100" default="false"/>
 		<setting id="YoutubeDLCustomMediaFilter" type="text" label="32101" default="" visible="eq(-1,true)"/>
 	</category>
+	<category label="32014">
+		<setting label="32003" type="select" id="openMagnetWith" values="Elementum|Quasar|Torrenter V2|YATP" default="Elementum"/>
+		<setting id="preferYoutubeAddon" type="bool" label="32008" default="false"/>
+		<setting id="preferArteAddon" type="bool" label="32102" default="false"/>
+	</category>	
 	<category label="32009">
 		<setting id="skipSslVerification" type="bool" label="32010" default="false"/>
 	</category>

@@ -63,10 +63,18 @@ msgctxt "#32013"
 msgid "Use YoutubeDL http headers"
 msgstr ""
 
+msgctxt "#32014"
+msgid "URL Handlers"
+msgstr ""
+
 msgctxt "#32100"
 msgid "Use custom YoutubeDL format filter"
 msgstr ""
 
 msgctxt "#32101"
 msgid "Preferred YoutubeDL format"
+msgstr ""
+
+msgctxt "#32102"
+msgid "Prefer Kodi Arte addon for arte.tv urls"
 msgstr ""

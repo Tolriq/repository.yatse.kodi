@@ -266,3 +266,6 @@ def get_list_item_path(list_item):
         return list_item.getPath()
     else:
         return list_item.getfilename()
+    
+def addon_exists(addon_name):
+    return xbmc.getCondVisibility('System.HasAddon(%s)' % addon_name) == 1

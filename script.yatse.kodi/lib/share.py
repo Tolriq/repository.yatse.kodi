@@ -93,6 +93,18 @@ def resolve_with_youtube_dl(url, parameters, action):
 
 def handle_unresolved_url(data, action):
     url = unquote(data)
+
+    if utils.get_setting('preferArteAddon') == 'true' and "arte.tv" in url:
+        ARTE_PLUGIN_ID = 'plugin.video.tyl0re.arte'
+        if utils.addon_exists(ARTE_PLUGIN_ID):
+            logger.info(u'Passing URL (%s) to ARTE Plugin (%s) as per current user settings' % (url,ARTE_PLUGIN_ID))
+            xbmc.Player().play('plugin://%s/?mode=playVideo&url=%s' % (ARTE_PLUGIN_ID,url))
+            return True
+        else:
+            errmsg='Arte addon is not installed. Passing URL to regular handling. Please install Arte addon manually or deactivate using Arte arte in settings'
+            logger.error(errmsg)
+            utils.show_error_notification(errmsg)
+    
     logger.info(u'Trying to resolve URL (%s): %s' % (action, url))
     if xbmc.Player().isPlaying():
         utils.show_info_notification(utils.translation(32007), 1000)
