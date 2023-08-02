@@ -7,13 +7,13 @@ import hashlib
 
 from .once import OnceIE
 from .adobepass import AdobePassIE
+from ..networking import Request
 from ..utils import (
     determine_ext,
     ExtractorError,
     float_or_none,
     int_or_none,
     parse_qs,
-    sanitized_Request,
     unsmuggle_url,
     update_url_query,
     xpath_with_ns,
@@ -45,7 +45,7 @@ class ThePlatformBaseIE(OnceIE):
                     raise ExtractorError(
                         error_element.attrib['abstract'], expected=True)
 
-        smil_formats = self._parse_smil_formats(
+        smil_formats, subtitles = self._parse_smil_formats_and_subtitles(
             meta, smil_url, video_id, namespace=default_ns,
             # the parameters are from syfy.com, other sites may use others,
             # they also work for nbc.com
@@ -64,8 +64,6 @@ class ThePlatformBaseIE(OnceIE):
                         _format['url'] = update_url_query(media_url, {'hdnea3': hdnea2.value})
 
                 formats.append(_format)
-
-        subtitles = self._parse_smil_subtitles(meta, default_ns)
 
         return formats, subtitles
 
@@ -270,7 +268,7 @@ class ThePlatformIE(ThePlatformBaseIE, AdobePassIE):
             source_url = smuggled_data.get('source_url')
             if source_url:
                 headers['Referer'] = source_url
-            request = sanitized_Request(url, headers=headers)
+            request = Request(url, headers=headers)
             webpage = self._download_webpage(request, video_id)
             smil_url = self._search_regex(
                 r'<link[^>]+href=(["\'])(?P<url>.+?)\1[^>]+type=["\']application/smil\+xml',
