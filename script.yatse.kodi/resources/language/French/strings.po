@@ -40,5 +40,5 @@ msgid "Identification du média partagé."
 msgstr ""
 
 msgctxt "#32008"
-msgid "Préférer l'addon Youtube de Kodi pour les urls Youtube"
+msgid "Addon préféré pour les urls Youtube"
 msgstr ""

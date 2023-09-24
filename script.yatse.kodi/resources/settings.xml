@@ -5,7 +5,7 @@
 	</category>
 	<category label="32001">
 		<setting label="32003" type="select" id="openMagnetWith" values="Elementum|Quasar|Torrenter V2|YATP" default="Elementum"/>
-		<setting id="preferYoutubeAddon" type="bool" label="32008" default="false"/>
+		<setting label="32008" id="preferredYoutubeAddon" type="select" values="YouTube|Invidious|None" default="YouTube"/>
 		<setting id="useCookiesFromBrowser" type="bool" label="32011" default="false"/>
 		<setting id="cookiesBrowserName" type="select" label="32012" values="firefox|safari|brave|chrome|chromium|edge|opera|vivaldi" visible="eq(-1,true)" />
 		<setting id="useYoutubeDLHttpHeader" type="bool" label="32013" default="true"/>

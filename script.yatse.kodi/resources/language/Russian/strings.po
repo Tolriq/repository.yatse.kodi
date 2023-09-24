@@ -41,7 +41,7 @@ msgstr "Обработка переданной ссылки."
 
 msgctxt "#32008"
 msgid "Prefer Kodi Youtube addon for Youtube urls"
-msgstr "Предпочитать дополнение YouTube для Kodi при открытии ссылок на YouTube"
+msgstr "Обработчик ссылок YouTube"
 
 msgctxt "#32009"
 msgid "Network"
