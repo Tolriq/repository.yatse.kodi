@@ -14,7 +14,8 @@ else:
     from urllib import unquote
 
 have_adaptive_plugin = '"enabled":true' in xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,"params":{"addonid":"inputstream.adaptive", "properties": ["enabled"]}}')
-
+have_youtube_plugin = '"enabled":true' in xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,"params":{"addonid":"plugin.video.youtube", "properties": ["enabled"]}}')
+have_invidious_plugin = '"enabled":true' in xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,"params":{"addonid":"plugin.video.invidious", "properties": ["enabled"]}}')
 
 def run(argument):
     if argument['type'] == 'magnet':
@@ -99,12 +100,27 @@ def handle_unresolved_url(data, action):
     else:
         utils.show_info_notification(utils.translation(32007))
     if 'youtube.com' in url or 'youtu.be' in url:
-        youtube_addon = xbmcaddon.Addon(id="plugin.video.youtube")
-        if youtube_addon:
-            if utils.get_setting('preferYoutubeAddon') == 'true' or youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
-                logger.info(u'Youtube addon have DASH enabled or is configured as preferred use it')
-                utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % data, action)
-                return
+        if have_youtube_plugin:
+            youtube_addon = xbmcaddon.Addon(id="plugin.video.youtube")
+            if youtube_addon:
+                if utils.get_setting('preferredYoutubeAddon') == "YouTube" or youtube_addon.getSetting("kodion.video.quality.mpd") == "true":
+                    logger.info(u'Youtube addon have DASH enabled or is configured as preferred use it')
+                    utils.play_url('plugin://plugin.video.youtube/uri2addon/?uri=%s' % data, action)
+                    return
+        if have_invidious_plugin:
+            invidious_addon = xbmcaddon.Addon(id="plugin.video.invidious")
+            if invidious_addon:
+                if utils.get_setting('preferredYoutubeAddon') == "Invidious":
+                    video_id = ""
+                    video_id_pos = url.find('v=')
+                    if video_id_pos >= 0:
+                        video_id = url[video_id_pos + 2:]
+                        video_id_pos = video_id.find('&')
+                        if video_id_pos >= 0:
+                            video_id = video_id[0:video_id_pos]
+                    logger.info(u'Playing YouTube video id "%s" with Invidious' % (video_id))
+                    utils.play_url('plugin://plugin.video.invidious/?action=play_video&video_id=%s' % video_id, action)
+                    return
 
     media_filter = utils.get_setting('YoutubeDLCustomMediaFilter')
     if utils.get_setting('useYoutubeDLCustomFilter') == 'true' and media_filter:

@@ -2,7 +2,8 @@
 <addon id="script.yatse.kodi" name="Yatse Kodi helper script" version="2.5.25" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
-        <import addon="plugin.video.youtube"/>
+        <import addon="plugin.video.youtube" optional="true"/>
+        <import addon="plugin.video.invidious" optional="true"/>
     </requires>
     <extension point="xbmc.python.script" library="default.py">
         <provides>executable</provides>
