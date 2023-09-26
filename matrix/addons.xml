@@ -27,10 +27,11 @@
 	</extension>
 </addon>
 
-<addon id="script.yatse.kodi" name="Yatse Matrix helper script" version="92.5.25" provider-name="Yatse">
+<addon id="script.yatse.kodi" name="Yatse Matrix helper script" version="92.6.1" provider-name="Yatse">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="plugin.video.youtube"/>
+        <import addon="plugin.video.youtube" optional="true"/>
+        <import addon="plugin.video.invidious" optional="true"/>
     </requires>
     <extension point="xbmc.python.script" library="default.py">
         <provides>executable</provides>
@@ -45,7 +46,8 @@
         <description lang="fr">Script Yatse helper pour Kodi</description>
         <description lang="de">Yatse-Skript für Kodi</description>
         <platform>all</platform>
-        <news>2.5.X: Update Yt-dlp
+        <news>2.6.X: Update Yt-dlp
+2.6.0: Added support for invidious as Youtube plugin
 2.5.0: Switch to Yt-dlp (YoutubeDL replacement)
 2.4.X: Update YoutubeDL
 2.4.0: Fix for Kodi 19 magnet sharing
