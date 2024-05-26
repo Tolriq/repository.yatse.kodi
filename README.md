@@ -4,7 +4,10 @@ This repository contains scripts and plugins to enhance Kodi experience when use
 
 You first need to add the repository to your Kodi then install the addon.
 
-For that download: https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/zips/repository.yatse.kodi/repository.yatse.kodi-1.0.1.zip
+For that download: 
+
+https://github.com/Tolriq/repository.yatse.kodi/raw/master/zips/repository.kodi.yatse.tv/repository.kodi.yatse.tv-1.1.0.zip
+
 Then install it from Kodi
 
 Or follow the full procedure from https://yatse.tv/wiki/yatse-kodi-addon
